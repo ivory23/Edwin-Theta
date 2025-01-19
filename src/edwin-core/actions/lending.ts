@@ -1,10 +1,10 @@
-import { EdwinWallet } from "../providers/wallet";
-import type { Transaction } from "../types";
-import { SupplyParams } from "../protocols/interfaces/lending";
-import { getLendingProtocol } from "../protocols";
+import { EdwinWallet } from "../components/evm_wallet";
+import type { Transaction } from "../../types";
+import { SupplyParams } from "../../protocols/interfaces/lending";
+import { getLendingProtocol } from "../../protocols";
 
 export class SupplyAction {
-    constructor(private walletProvider: EdwinWallet) {}
+    constructor(private wallet: EdwinWallet) {}
 
     async supply(params: SupplyParams): Promise<Transaction> {
         console.log(
@@ -21,7 +21,7 @@ export class SupplyAction {
             // Use the protocol-specific supply implementation
             return await lendingProtocol.supply({
                 ...params,
-                walletProvider: this.walletProvider,
+                walletProvider: this.wallet,
             });
         } catch (error: any) {
             // If error has a message, use it

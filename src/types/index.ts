@@ -1,12 +1,8 @@
 import type { Token } from "@lifi/types";
 import type {
-    Account,
     Address,
     Chain,
     Hash,
-    HttpTransport,
-    PublicClient,
-    WalletClient,
 } from "viem";
 import * as viemChains from "viem/chains";
 
@@ -53,4 +49,32 @@ export interface ChainMetadata {
         decimals: number;
     };
     blockExplorerUrl: string;
+}
+
+export interface EdwinConfig {
+    privateKey: `0x${string}`;
+}
+
+export interface SupplyParams {
+    chain: string;
+    protocol: string;
+    contract: string;
+    amount: string;
+    asset: string;
+}
+
+export interface WithdrawParams {
+    chain: string;
+    protocol: string;
+    contract: string;
+    amount: string;
+    asset: string;
+}
+
+export interface StakeParams {
+    chain: string;
+    protocol: string;
+    contract: string;
+    amount: string;
+    asset: string;
 }

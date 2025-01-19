@@ -18,7 +18,7 @@ import * as viemChains from "viem/chains";
 import NodeCache from "node-cache";
 import * as path from "path";
 
-import type { SupportedChain } from "../types";
+import type { SupportedChain } from "../../types";
 
 export class EdwinWallet {
     private cache: NodeCache;

@@ -1,5 +1,5 @@
 import type { Transaction, SupportedChain } from "../../types";
-import type { EdwinWallet } from "../../providers/wallet";
+import type { EdwinWallet } from "../../edwin-core/components/evm_wallet";
 
 // Base interface for all protocol parameters
 export interface BaseProtocolParams {

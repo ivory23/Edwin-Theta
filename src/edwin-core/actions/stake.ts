@@ -1,6 +1,6 @@
-import { EdwinWallet } from "../providers/wallet";
-import type { Transaction } from "../types";
-import { StakingParams } from "../protocols/interfaces/staking";
+import { EdwinWallet } from "../components/evm_wallet";
+import type { Transaction } from "../../types";
+import { StakingParams } from "../../protocols/interfaces/staking";
 
 // Exported for tests
 export class StakeAction {
