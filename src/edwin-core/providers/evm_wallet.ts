@@ -16,7 +16,7 @@ import type {
 } from "viem";
 import * as viemChains from "viem/chains";
 import type { SupportedChain } from "../../types";
-import { EdwinWallet } from ".";
+import { EdwinWallet } from "./wallet";
 
 export class EdwinEVMWallet extends EdwinWallet {
     private currentChain: SupportedChain = "mainnet";
