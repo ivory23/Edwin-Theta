@@ -18,8 +18,12 @@
     "agents",
     "blockchain",
     "ethereum",
+    "sdk",
+    "defi",
     "lending",
-    "sdk"
+    "borrowing",
+    "staking",
+    "yield"
   ],
   "author": "",
   "license": "MIT",
