@@ -115,3 +115,8 @@ export interface EdwinAction {
     schema: z.ZodSchema;
     execute: (params: ActionParams) => Promise<Transaction>;
 }
+
+export interface EdwinWallet {
+    constructor(privateKey: `0x${string}`, chains?: Record<string, Chain>): EdwinWallet;
+    getAddress(): Address | undefined;
+}

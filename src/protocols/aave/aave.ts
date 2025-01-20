@@ -1,6 +1,5 @@
 import { Pool, EthereumTransactionTypeExtended } from "@aave/contract-helpers";
 import { ethers, providers } from "ethers";
-import { parseUnits } from "ethers/lib/utils";
 import {
     type ILendingProtocol,
     type SupplyParams,
@@ -93,12 +92,6 @@ export class AaveProtocol implements ILendingProtocol {
             if (!reserve) {
                 throw new Error(`Unsupported asset: ${asset}`);
             }
-            const decimals = AaveV3Base.ASSETS[assetKey as keyof typeof AaveV3Base.ASSETS].decimals;
-            // Convert amount to proper decimals
-            const amountInWei = parseUnits(amount, decimals);
-            console.log(
-                `Converted amount ${amount} to wei: ${amountInWei.toString()}`
-            );
 
             console.log(`Reserve: ${reserve}`);
             // Prepare supply parameters

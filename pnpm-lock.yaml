@@ -8,17 +8,19 @@ importers:
 
   .:
     dependencies:
-      zod:
-        specifier: ^3.24.1
-        version: 3.24.1
-    optionalDependencies:
       '@aave/contract-helpers':
         specifier: ^1.30.5
         version: 1.30.5(bignumber.js@9.1.2)(ethers@5.7.2(bufferutil@4.0.9)(utf-8-validate@5.0.10))(reflect-metadata@0.1.14)(tslib@2.8.1)
-    devDependencies:
       '@bgd-labs/aave-address-book':
         specifier: ^4.7.4
         version: 4.7.4
+      ethers:
+        specifier: ^5.7.2
+        version: 5.7.2(bufferutil@4.0.9)(utf-8-validate@5.0.10)
+      zod:
+        specifier: ^3.24.1
+        version: 3.24.1
+    devDependencies:
       '@lifi/data-types':
         specifier: 5.15.5
         version: 5.15.5
@@ -37,9 +39,6 @@ importers:
       eslint:
         specifier: ^8.0.0
         version: 8.57.1
-      ethers:
-        specifier: 5.7.2
-        version: 5.7.2(bufferutil@4.0.9)(utf-8-validate@5.0.10)
       node-cache:
         specifier: ^5.1.2
         version: 5.1.2
@@ -2014,7 +2013,6 @@ snapshots:
       tslib: 2.8.1
     transitivePeerDependencies:
       - encoding
-    optional: true
 
   '@adraffy/ens-normalize@1.11.0': {}
 
@@ -2881,8 +2879,7 @@ snapshots:
     dependencies:
       bindings: 1.5.0
 
-  bignumber.js@9.1.2:
-    optional: true
+  bignumber.js@9.1.2: {}
 
   bindings@1.5.0:
     dependencies:
@@ -3396,7 +3393,6 @@ snapshots:
       unfetch: 4.2.0
     transitivePeerDependencies:
       - encoding
-    optional: true
 
   isomorphic-ws@4.0.1(ws@7.5.10(bufferutil@4.0.9)(utf-8-validate@5.0.10)):
     dependencies:
@@ -3665,8 +3661,7 @@ snapshots:
 
   readdirp@4.1.1: {}
 
-  reflect-metadata@0.1.14:
-    optional: true
+  reflect-metadata@0.1.14: {}
 
   regenerator-runtime@0.14.1: {}
 
@@ -3886,8 +3881,7 @@ snapshots:
 
   undici-types@6.20.0: {}
 
-  unfetch@4.2.0:
-    optional: true
+  unfetch@4.2.0: {}
 
   uri-js@4.4.1:
     dependencies:

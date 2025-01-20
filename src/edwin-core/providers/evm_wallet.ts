@@ -15,11 +15,9 @@ import type {
     PrivateKeyAccount,
 } from "viem";
 import * as viemChains from "viem/chains";
-import { EdwinWallet } from "./index";
-import type { SupportedChain } from "../../types";
+import type { SupportedChain, EdwinWallet } from "../../types";
 
-
-export class EdwinEVMWallet extends EdwinWallet {
+export class EdwinEVMWallet implements EdwinWallet {
     private currentChain: SupportedChain = "mainnet";
     public chains: Record<string, Chain> = { ...viemChains };
     private account: PrivateKeyAccount | undefined;
@@ -28,7 +26,6 @@ export class EdwinEVMWallet extends EdwinWallet {
         privateKey: `0x${string}`,
         chains?: Record<string, Chain>
     ) {
-        super(privateKey);
         this.setChains(chains);
 
         if (chains && Object.keys(chains).length > 0) {
