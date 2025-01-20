@@ -2,12 +2,17 @@ import { Chain } from 'viem';
 import { Address } from "viem";
 import { EdwinConfig } from "../../types";
 import { EdwinEVMWallet } from "./evm_wallet";
+import { privateKeyToAddress } from 'viem/accounts';
 
 export class EdwinWallet {
-    constructor(protected privateKey: `0x${string}`) {}
+    private address: Address | undefined;
+    
+    constructor(protected privateKey: `0x${string}`) {
+        this.address = privateKeyToAddress(privateKey);
+    }
     
     getAddress(): Address | undefined {
-        throw new Error("Method not implemented.");
+        return this.address;
     }
     
     getCurrentChain(): Chain {

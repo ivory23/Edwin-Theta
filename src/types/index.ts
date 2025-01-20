@@ -113,6 +113,14 @@ export interface IDEXProtocol {
 export interface EdwinAction {
     name: string;
     description: string;
-    schema: z.ZodSchema;
+    schema: z.ZodEffects<z.ZodObject<{
+        input: z.ZodOptional<z.ZodString>;
+    }, "strip", z.ZodTypeAny, {
+        input?: string | undefined;
+    }, {
+        input?: string | undefined;
+    }>, string | undefined, {
+        input?: string | undefined;
+    }>;
     execute: (params: ActionParams) => Promise<Transaction>;
 }
