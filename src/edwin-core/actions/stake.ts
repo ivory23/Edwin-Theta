@@ -1,8 +1,6 @@
-import { EdwinWallet } from "../providers";
-import type { Transaction } from "../../types";
-import { StakeParams } from "../../types/";
-import { EdwinAction } from "../../types";
+import type { Transaction, EdwinAction, StakeParams } from "../../types";
 import { z } from "zod";
+import { EdwinWallet } from "../providers";
 // Exported for tests
 export class StakeAction implements EdwinAction {
     public name = 'stake';

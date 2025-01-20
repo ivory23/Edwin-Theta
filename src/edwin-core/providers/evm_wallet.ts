@@ -15,22 +15,16 @@ import type {
     PrivateKeyAccount,
 } from "viem";
 import * as viemChains from "viem/chains";
-import type { SupportedChain, EdwinWallet } from "../../types";
+import type { SupportedChain } from "../../types";
+import { EdwinWallet } from ".";
 
-export class EdwinEVMWallet implements EdwinWallet {
+export class EdwinEVMWallet extends EdwinWallet {
     private currentChain: SupportedChain = "mainnet";
     public chains: Record<string, Chain> = { ...viemChains };
     private account: PrivateKeyAccount | undefined;
-
     constructor(
-        privateKey: `0x${string}`,
-        chains?: Record<string, Chain>
-    ) {
-        this.setChains(chains);
-
-        if (chains && Object.keys(chains).length > 0) {
-            this.setCurrentChain(Object.keys(chains)[0] as SupportedChain);
-        }
+        privateKey: `0x${string}`) {
+        super(privateKey);
     }
 
     getAddress(): Address | undefined {

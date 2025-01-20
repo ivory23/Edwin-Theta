@@ -5,9 +5,10 @@ import type {
     Hash,
 } from "viem";
 import * as viemChains from "viem/chains";
-import { EdwinWallet } from "../edwin-core/providers";
 import { z } from "zod";
+import { EdwinWallet } from "../edwin-core/providers";
 
+export type { EdwinWallet };
 
 const _SupportedChainList = Object.keys(viemChains) as Array<
     keyof typeof viemChains
@@ -114,9 +115,4 @@ export interface EdwinAction {
     description: string;
     schema: z.ZodSchema;
     execute: (params: ActionParams) => Promise<Transaction>;
-}
-
-export interface EdwinWallet {
-    constructor(privateKey: `0x${string}`, chains?: Record<string, Chain>): EdwinWallet;
-    getAddress(): Address | undefined;
 }
