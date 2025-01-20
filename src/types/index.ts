@@ -5,6 +5,9 @@ import type {
     Hash,
 } from "viem";
 import * as viemChains from "viem/chains";
+import { EdwinWallet } from "../edwin-core/providers";
+import { z } from "zod";
+
 
 const _SupportedChainList = Object.keys(viemChains) as Array<
     keyof typeof viemChains
@@ -52,29 +55,63 @@ export interface ChainMetadata {
 }
 
 export interface EdwinConfig {
-    privateKey: `0x${string}`;
+    evmPrivateKey: `0x${string}`;
+    solanaPrivateKey: `0x${string}`;
+    actions: string[];
 }
 
-export interface SupplyParams {
-    chain: string;
+// Base interface for all protocol parameters
+export interface ActionParams {
     protocol: string;
-    contract: string;
+    chain: SupportedChain;
     amount: string;
     asset: string;
+    data?: string;
+    walletProvider: EdwinWallet;
 }
 
-export interface WithdrawParams {
-    chain: string;
-    protocol: string;
+export interface SupplyParams extends ActionParams {}
+
+export interface WithdrawParams extends ActionParams {}
+
+export interface StakeParams extends ActionParams {}
+export interface SwapParams extends ActionParams {
     contract: string;
-    amount: string;
-    asset: string;
+    tokenIn: string;
+    tokenOut: string;
+    amountOut?: string;
+    slippage: number;
+    recipient?: string;
 }
 
-export interface StakeParams {
-    chain: string;
-    protocol: string;
+export interface LiquidityParams extends ActionParams {
     contract: string;
-    amount: string;
-    asset: string;
+    tokenA: string;
+    tokenB: string;
+    amountB: string;
+}
+
+export interface ILendingProtocol {
+    supply(params: SupplyParams): Promise<Transaction>;
+    withdraw(params: WithdrawParams): Promise<Transaction>;
+}
+
+export interface IStakingProtocol {
+    stake(params: StakeParams): Promise<Transaction>;
+    unstake(params: StakeParams): Promise<Transaction>;
+    claimRewards?(params: StakeParams): Promise<Transaction>;
+}
+
+export interface IDEXProtocol {
+    swap(params: SwapParams): Promise<Transaction>;
+    addLiquidity?(params: LiquidityParams): Promise<Transaction>;
+    removeLiquidity?(params: LiquidityParams): Promise<Transaction>;
+    getQuote?(params: SwapParams): Promise<string>;
+}
+
+export interface EdwinAction {
+    name: string;
+    description: string;
+    schema: z.ZodSchema;
+    execute: (params: ActionParams) => Promise<Transaction>;
 }

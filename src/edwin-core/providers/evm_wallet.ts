@@ -4,7 +4,7 @@ import {
     formatUnits,
     http,
 } from "viem";
-import { privateKeyToAccount } from "viem/accounts";
+import { privateKeyToAccount, privateKeyToAddress } from "viem/accounts";
 import type {
     Address,
     WalletClient,
@@ -15,31 +15,25 @@ import type {
     PrivateKeyAccount,
 } from "viem";
 import * as viemChains from "viem/chains";
-import NodeCache from "node-cache";
-import * as path from "path";
-
+import { EdwinWallet } from "./index";
 import type { SupportedChain } from "../../types";
 
-export class EdwinWallet {
-    private cache: NodeCache;
-    private cacheKey: string = "evm/wallet";
+
+export class EdwinEVMWallet extends EdwinWallet {
     private currentChain: SupportedChain = "mainnet";
-    private CACHE_EXPIRY_SEC = 5;
-    chains: Record<string, Chain> = { ...viemChains };
-    account: PrivateKeyAccount | undefined;
+    public chains: Record<string, Chain> = { ...viemChains };
+    private account: PrivateKeyAccount | undefined;
 
     constructor(
-        accountOrPrivateKey: PrivateKeyAccount | `0x${string}`,
+        privateKey: `0x${string}`,
         chains?: Record<string, Chain>
     ) {
-        this.setAccount(accountOrPrivateKey);
+        super(privateKey);
         this.setChains(chains);
 
         if (chains && Object.keys(chains).length > 0) {
             this.setCurrentChain(Object.keys(chains)[0] as SupportedChain);
         }
-
-        this.cache = new NodeCache({ stdTTL: this.CACHE_EXPIRY_SEC });
     }
 
     getAddress(): Address | undefined {
@@ -129,7 +123,7 @@ export class EdwinWallet {
 
     switchChain(chainName: SupportedChain, customRpcUrl?: string) {
         if (!this.chains[chainName]) {
-            const chain = EdwinWallet.genChainFromName(
+            const chain = EdwinEVMWallet.genChainFromName(
                 chainName,
                 customRpcUrl
             );
@@ -138,14 +132,8 @@ export class EdwinWallet {
         this.setCurrentChain(chainName);
     }
 
-    private setAccount = (
-        accountOrPrivateKey: PrivateKeyAccount | `0x${string}`
-    ) => {
-        if (typeof accountOrPrivateKey === "string") {
-            this.account = privateKeyToAccount(accountOrPrivateKey);
-        } else {
-            this.account = accountOrPrivateKey;
-        }
+    private setAccount = (privateKey: `0x${string}`) => {
+        this.account = privateKeyToAccount(privateKey);
     };
 
     private setChains = (chains?: Record<string, Chain>) => {

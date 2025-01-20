@@ -1,7 +1,7 @@
-import { ILendingProtocol, IStakingProtocol, IDEXProtocol } from "./interfaces";
-import { AaveProtocol } from "./aave";
-import { UniswapProtocol } from "./uniswap";
-import { LidoProtocol } from "./lido";
+import type { ILendingProtocol, IStakingProtocol, IDEXProtocol } from "../types";
+import { AaveProtocol } from "./aave/aave";
+import { UniswapProtocol } from "./uniswap/uniswap";
+import { LidoProtocol } from "./lido/lido";
 
 const protocols: Record<
     string,

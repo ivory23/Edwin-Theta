@@ -1,21 +1,23 @@
-import { EdwinWallet } from "../components/evm_wallet";
+import { EdwinWallet } from "../providers";
 import type { Transaction } from "../../types";
-import { StakingParams } from "../../protocols/interfaces/staking";
-
+import { StakeParams } from "../../types/";
+import { EdwinAction } from "../../types";
+import { z } from "zod";
 // Exported for tests
-export class StakeAction {
-    constructor(private walletProvider: EdwinWallet) {}
+export class StakeAction implements EdwinAction {
+    public name = 'stake';
+    public description = 'Stake assets to a staking protocol';
+    public schema = z.object({
+        protocol: z.string(),
+        chain: z.string(),
+        amount: z.string(),
+        asset: z.string(),
+        data: z.string().optional(),
+        walletProvider: z.instanceof(EdwinWallet)
+    });
 
-    async stake(params: StakingParams): Promise<Transaction> {
-        console.log(`Staking: ${params} tokens t)`);
-
-        if (!params.data) {
-            params.data = "0x";
-        }
-
-        // this.walletProvider.switchChain(params.chain);
-
-        const walletClient = this.walletProvider.getWalletClient(params.chain);
+    async execute(params: StakeParams): Promise<Transaction> {
+        console.log(`Staking: ${params.amount} ${params.asset} on ${params.chain})`);
 
         try {
             return {

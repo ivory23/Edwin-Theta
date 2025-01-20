@@ -1,31 +1,39 @@
-import { createWalletClient, http, type WalletClient, type Chain } from 'viem';
-import { privateKeyToAccount } from 'viem/accounts';
-import { mainnet } from 'viem/chains';
-import { SupplyAction } from '../edwin-core/actions/lending';
-import { StakeAction } from '../edwin-core/actions/stake';
-import type { EdwinConfig, SupportedChain } from '../types';
-import { EdwinWallet } from '../edwin-core/components/evm_wallet';
+import type { EdwinConfig, EdwinAction } from '../types';
+import { EdwinProvider } from '../edwin-core/providers';
+import {
+  SupplyAction,
+  WithdrawAction,
+  StakeAction
+ } from '../edwin-core/actions';
+
+
+const ACTION_MAP: Record<string, new () => EdwinAction> = {
+  'supply': SupplyAction,
+  'withdraw': WithdrawAction,
+  'stake': StakeAction,
+};
 
 export class Edwin {
-  private wallet: EdwinWallet;
-  public lending: SupplyAction;
-  public staking: StakeAction;
+  public provider: EdwinProvider;
+  public actions: EdwinAction[] = [];
 
   constructor(config: EdwinConfig) {
-    // Initialize wallet
-    const account = privateKeyToAccount(config.privateKey);
-    this.wallet = new EdwinWallet(account);
+    // Initialize provider
+    this.provider = new EdwinProvider(config);
 
-    // Initialize actions
-    this.lending = new SupplyAction(this.wallet);
-    this.staking = new StakeAction(this.wallet);
+    // Initialize actions with the wallet
+    this.actions = config.actions
+      .map(actionName => {
+        const ActionClass = ACTION_MAP[actionName.toLowerCase()];
+        if (!ActionClass) {
+          throw new Error(`Unsupported action: ${actionName}`);
+        }
+        return new ActionClass();
+      })
+      .filter((action): action is EdwinAction => action !== null);
   }
 
-  public getAddress(): string {
-    return this.wallet.getAddress() || "";
-  }
-
-  public async switchChain(chain: SupportedChain) {
-    this.wallet.switchChain(chain);
+  public async getActions() {
+    return this.actions;
   }
 }
