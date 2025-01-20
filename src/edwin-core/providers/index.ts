@@ -8,3 +8,6 @@ export class EdwinProvider {
         this.wallets['evm'] = new EdwinEVMWallet(config.evmPrivateKey);
     }
 }
+
+export { EdwinWallet } from "./wallet";
+export { EdwinEVMWallet } from "./evm_wallet";

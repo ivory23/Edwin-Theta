@@ -6,7 +6,7 @@ import type {
 } from "viem";
 import * as viemChains from "viem/chains";
 import { z } from "zod";
-import { EdwinWallet } from "../edwin-core/providers";
+import { EdwinWallet } from "../edwin-core/providers/wallet";
 
 export type { EdwinWallet };
 
