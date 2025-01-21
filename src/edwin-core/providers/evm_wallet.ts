@@ -26,14 +26,15 @@ export const _SupportedEVMChainList = Object.keys(viemChains) as Array<
 export class EdwinEVMWallet extends EdwinWallet {
     private currentChain: SupportedEVMChain = "mainnet";
     public chains: Record<string, Chain> = { ...viemChains };
-    private account: PrivateKeyAccount | undefined;
+    private account: PrivateKeyAccount;
     constructor(
         privateKey: `0x${string}`) {
         super(privateKey);
+        this.account = privateKeyToAccount(privateKey);
     }
 
-    getAddress(): Address | undefined {
-        return this.account?.address;
+    getAddress(): Address {
+        return this.account.address;
     }
 
     getCurrentChain(): Chain {
@@ -77,7 +78,7 @@ export class EdwinEVMWallet extends EdwinWallet {
     async getWalletBalance(): Promise<string | null> {
         try {
             const client = this.getPublicClient(this.currentChain);
-            if (!this.account?.address) {
+            if (!this.account.address) {
                 throw new Error("Account not set");
             }
             const balance = await client.getBalance({
@@ -100,7 +101,7 @@ export class EdwinEVMWallet extends EdwinWallet {
     ): Promise<string | null> {
         try {
             const client = this.getPublicClient(chainName);
-            if (!this.account?.address) {
+            if (!this.account.address) {
                 throw new Error("Account not set");
             }
             const balance = await client.getBalance({

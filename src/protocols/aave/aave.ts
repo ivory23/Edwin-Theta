@@ -43,14 +43,10 @@ export class AaveProtocol implements ILendingProtocol {
         );
 
         try {
-            if (!(walletProvider instanceof EdwinEVMWallet)) {
-                throw new Error('Wallet provider is not an instance of EdwinEVMWallet');
-            }
-            const evmWallet = walletProvider as EdwinEVMWallet;
-            evmWallet.switchChain(chain);
+            walletProvider.switchChain(chain);
             console.log(`Switched to chain: ${chain}`);
 
-            const walletClient = evmWallet.getWalletClient(chain);
+            const walletClient = walletProvider.getWalletClient(chain);
             console.log(`Got wallet client for chain: ${chain}`);
 
             // Log the RPC URL from the transport
