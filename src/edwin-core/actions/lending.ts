@@ -4,9 +4,12 @@ import { SupplyParams, WithdrawParams } from "../../types/";
 import { getLendingProtocol } from "../../protocols";
 import { EdwinAction } from "../../types";
 import { z } from "zod";
+import { supplyTemplate } from "../templates";
+
 export class SupplyAction implements EdwinAction {
     public name = 'supply';
     public description = 'Supply assets to a lending protocol';
+    public template = supplyTemplate;
     public schema = z.object({
         protocol: z.string(),
         chain: z.string(),
