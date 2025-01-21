@@ -7,7 +7,7 @@ import {
  } from '../edwin-core/actions';
 
 
-const ACTION_MAP: Record<string, new () => EdwinAction> = {
+const ACTION_MAP: Record<string, new (provider: EdwinProvider) => EdwinAction> = {
   'supply': SupplyAction,
   'withdraw': WithdrawAction,
   'stake': StakeAction,
@@ -28,7 +28,8 @@ export class Edwin {
         if (!ActionClass) {
           throw new Error(`Unsupported action: ${actionName}`);
         }
-        return new ActionClass();
+        // Give each action the provider for usage in the action
+        return new ActionClass(this.provider);
       })
       .filter((action): action is EdwinAction => action !== null);
   }

@@ -4,7 +4,7 @@ import {
     formatUnits,
     http,
 } from "viem";
-import { privateKeyToAccount, privateKeyToAddress } from "viem/accounts";
+import { privateKeyToAccount } from "viem/accounts";
 import type {
     Address,
     WalletClient,
@@ -15,11 +15,16 @@ import type {
     PrivateKeyAccount,
 } from "viem";
 import * as viemChains from "viem/chains";
-import type { SupportedChain } from "../../types";
+import type { SupportedEVMChain } from "../../types";
 import { EdwinWallet } from "./wallet";
 
+
+export const _SupportedEVMChainList = Object.keys(viemChains) as Array<
+    keyof typeof viemChains
+>;
+
 export class EdwinEVMWallet extends EdwinWallet {
-    private currentChain: SupportedChain = "mainnet";
+    private currentChain: SupportedEVMChain = "mainnet";
     public chains: Record<string, Chain> = { ...viemChains };
     private account: PrivateKeyAccount | undefined;
     constructor(
@@ -36,7 +41,7 @@ export class EdwinEVMWallet extends EdwinWallet {
     }
 
     getPublicClient(
-        chainName: SupportedChain
+        chainName: SupportedEVMChain
     ): PublicClient<HttpTransport, Chain, Account | undefined> {
         const transport = this.createHttpTransport(chainName);
 
@@ -47,7 +52,7 @@ export class EdwinEVMWallet extends EdwinWallet {
         return publicClient;
     }
 
-    getWalletClient(chainName: SupportedChain): WalletClient {
+    getWalletClient(chainName: SupportedEVMChain): WalletClient {
         const transport = this.createHttpTransport(chainName);
 
         const walletClient = createWalletClient({
@@ -59,7 +64,7 @@ export class EdwinEVMWallet extends EdwinWallet {
         return walletClient;
     }
 
-    getChainConfigs(chainName: SupportedChain): Chain {
+    getChainConfigs(chainName: SupportedEVMChain): Chain {
         const chain = viemChains[chainName];
 
         if (!chain?.id) {
@@ -91,7 +96,7 @@ export class EdwinEVMWallet extends EdwinWallet {
     }
 
     async getWalletBalanceForChain(
-        chainName: SupportedChain
+        chainName: SupportedEVMChain
     ): Promise<string | null> {
         try {
             const client = this.getPublicClient(chainName);
@@ -112,7 +117,7 @@ export class EdwinEVMWallet extends EdwinWallet {
         this.setChains(chain);
     }
 
-    switchChain(chainName: SupportedChain, customRpcUrl?: string) {
+    switchChain(chainName: SupportedEVMChain, customRpcUrl?: string) {
         if (!this.chains[chainName]) {
             const chain = EdwinEVMWallet.genChainFromName(
                 chainName,
@@ -136,11 +141,11 @@ export class EdwinEVMWallet extends EdwinWallet {
         });
     };
 
-    private setCurrentChain = (chain: SupportedChain) => {
+    private setCurrentChain = (chain: SupportedEVMChain) => {
         this.currentChain = chain;
     };
 
-    private createHttpTransport = (chainName: SupportedChain) => {
+    private createHttpTransport = (chainName: SupportedEVMChain) => {
         const chain = this.chains[chainName];
 
         if (chain.rpcUrls.custom) {

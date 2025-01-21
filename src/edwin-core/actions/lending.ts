@@ -1,24 +1,19 @@
-import { EdwinWallet } from "../providers/index";
-import type { Transaction } from "../../types";
-import { SupplyParams, WithdrawParams } from "../../types/";
+import type { EdwinProvider, Transaction } from "../../types";
+import { SupplyParams, WithdrawParams } from "../../types";
 import { getLendingProtocol } from "../../protocols";
 import { EdwinAction } from "../../types";
-import { z } from "zod";
-import { supplyTemplate } from "../templates";
+import { supplyTemplate, withdrawTemplate } from "../templates";
+import { EdwinWallet } from "../providers";
 
 export class SupplyAction implements EdwinAction {
     public name = 'supply';
     public description = 'Supply assets to a lending protocol';
     public template = supplyTemplate;
-    public schema = z.object({
-        protocol: z.string(),
-        chain: z.string(),
-        amount: z.string(),
-        asset: z.string(),
-        data: z.string().optional(),
-        walletProvider: z.instanceof(EdwinWallet)
-    });
-    constructor() {}
+    public provider: EdwinProvider;
+
+    constructor(provider: EdwinProvider) {
+        this.provider = provider;
+    }
 
     async execute(params: SupplyParams): Promise<Transaction> {
         console.log(
@@ -26,14 +21,32 @@ export class SupplyAction implements EdwinAction {
         );
 
         try {
+            console.log(`Getting lending protocol for: ${params.protocol}`);
             // Get the appropriate protocol service based on the protocol name
             const lendingProtocol = getLendingProtocol(params.protocol);
             if (!lendingProtocol) {
                 throw new Error(`Unsupported protocol: ${params.protocol}`);
             }
+            console.log(`Successfully got lending protocol: ${params.protocol}`);
 
+            console.log(`Getting wallet provider for chain: ${params.chain}`);
+            // Check which wallet is required by the protocol and if it is supported by the provider
+            const walletProvider = this.provider.getWallet(params.chain);
+            if (!walletProvider || !(walletProvider instanceof EdwinWallet)) {
+                throw new Error(`Unsupported wallet provider: ${params.protocol}`);
+            }
+            console.log(`Successfully got wallet provider for chain: ${params.chain}`);
+
+            console.log(`Checking if chain ${params.chain} is supported by protocol ${params.protocol}`);
+            // Check if the chain is supported by the protocol
+            if (!lendingProtocol.supportedChains.includes(params.chain)) {
+                throw new Error(`Unsupported chain: ${params.chain}`);
+            }
+            console.log(`Chain ${params.chain} is supported by protocol ${params.protocol}`);
+
+            console.log(`Executing supply operation with protocol ${params.protocol}`);
             // Use the protocol-specific supply implementation
-            return await lendingProtocol.supply(params);
+            return await lendingProtocol.supply(params, walletProvider);
         } catch (error: any) {
             // If error has a message, use it
             if (error.message) {
@@ -47,16 +60,12 @@ export class SupplyAction implements EdwinAction {
 export class WithdrawAction implements EdwinAction {
     public name = 'withdraw';
     public description = 'Withdraw assets from a lending protocol';
-    public schema = z.object({
-        protocol: z.string(),
-        chain: z.string(),
-        amount: z.string(),
-        asset: z.string(),
-        data: z.string().optional(),
-        walletProvider: z.instanceof(EdwinWallet)
-    });
-    
-    constructor() {}
+    public template = withdrawTemplate;
+    public provider: EdwinProvider;
+
+    constructor(provider: EdwinProvider) {
+        this.provider = provider;
+    }
 
     async execute(params: WithdrawParams): Promise<Transaction> {
         console.log(
@@ -70,8 +79,14 @@ export class WithdrawAction implements EdwinAction {
                 throw new Error(`Unsupported protocol: ${params.protocol}`);
             }
 
+            // Check which wallet is required by the protocol and if it is supported by the provider
+            const walletProvider = this.provider.getWallet(params.chain);
+            if (!walletProvider) {
+                throw new Error(`Unsupported wallet provider: ${params.protocol}`);
+            }
+
             // Use the protocol-specific withdraw implementation
-            return await lendingProtocol.withdraw(params);
+            return await lendingProtocol.withdraw(params, walletProvider);
         } catch (error: any) {
             // If error has a message, use it
             if (error.message) {

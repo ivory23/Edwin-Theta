@@ -1,4 +1,4 @@
-import type { ILendingProtocol, IStakingProtocol, IDEXProtocol } from "../types";
+import type { ILendingProtocol, IStakingProtocol, IDEXProtocol, EdwinWallet } from "../types";
 import { AaveProtocol } from "./aave/aave";
 import { UniswapProtocol } from "./uniswap/uniswap";
 import { LidoProtocol } from "./lido/lido";
@@ -24,6 +24,11 @@ export function getProtocol(
 // Type-safe getters for specific protocol types
 export function getLendingProtocol(name: string): ILendingProtocol | undefined {
     const protocol = protocols[name.toLowerCase()];
+    // Verify that the protocol implements the ILendingProtocol interface
+    if (!protocol || !("supply" in protocol)) {
+        return undefined;
+    }
+
     return "supply" in protocol ? (protocol as ILendingProtocol) : undefined;
 }
 

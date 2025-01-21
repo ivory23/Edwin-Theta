@@ -1,19 +1,14 @@
 import type { Token } from "@lifi/types";
-import type {
-    Address,
-    Chain,
-    Hash,
-} from "viem";
-import * as viemChains from "viem/chains";
-import { z } from "zod";
+import type { Address, Chain, Hash } from "viem";
 import { EdwinWallet } from "../edwin-core/providers/wallet";
+import { EdwinProvider } from "../edwin-core/providers";
+import { _SupportedEVMChainList } from "../edwin-core/providers/evm_wallet";
 
-export type { EdwinWallet };
+export type { EdwinWallet, EdwinProvider };
 
-const _SupportedChainList = Object.keys(viemChains) as Array<
-    keyof typeof viemChains
->;
-export type SupportedChain = (typeof _SupportedChainList)[number];
+export type SupportedEVMChain = (typeof _SupportedEVMChainList)[number];
+
+export type SupportedChain = SupportedEVMChain | 'solana';
 
 // Transaction types
 export interface Transaction {
@@ -35,7 +30,7 @@ export interface TokenWithBalance {
 }
 
 export interface WalletBalance {
-    chain: SupportedChain;
+    chain: SupportedEVMChain;
     address: Address;
     totalValueUSD: string;
     tokens: TokenWithBalance[];
@@ -64,7 +59,7 @@ export interface EdwinConfig {
 // Base interface for all protocol parameters
 export interface ActionParams {
     protocol: string;
-    chain: SupportedChain;
+    chain: SupportedEVMChain;
     amount: string;
     asset: string;
     data?: string;
@@ -93,8 +88,9 @@ export interface LiquidityParams extends ActionParams {
 }
 
 export interface ILendingProtocol {
-    supply(params: SupplyParams): Promise<Transaction>;
-    withdraw(params: WithdrawParams): Promise<Transaction>;
+    supportedChains: SupportedChain[];
+    supply(params: SupplyParams, walletProvider: EdwinWallet): Promise<Transaction>;
+    withdraw(params: WithdrawParams, walletProvider: EdwinWallet): Promise<Transaction>;
 }
 
 export interface IStakingProtocol {
@@ -113,6 +109,7 @@ export interface IDEXProtocol {
 export interface EdwinAction {
     name: string;
     description: string;
-    schema: z.ZodSchema;
+    template: string;
+    provider: EdwinProvider;
     execute: (params: ActionParams) => Promise<Transaction>;
 }

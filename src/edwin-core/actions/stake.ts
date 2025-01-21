@@ -1,18 +1,16 @@
 import type { Transaction, EdwinAction, StakeParams } from "../../types";
-import { z } from "zod";
-import { EdwinWallet } from "../providers";
+import { EdwinProvider } from "../providers";
+import { stakeTemplate } from "../templates";
 // Exported for tests
 export class StakeAction implements EdwinAction {
     public name = 'stake';
     public description = 'Stake assets to a staking protocol';
-    public schema = z.object({
-        protocol: z.string(),
-        chain: z.string(),
-        amount: z.string(),
-        asset: z.string(),
-        data: z.string().optional(),
-        walletProvider: z.instanceof(EdwinWallet)
-    });
+    public template = stakeTemplate;
+    public provider: EdwinProvider;
+
+    constructor(provider: EdwinProvider) {
+        this.provider = provider;
+    }
 
     async execute(params: StakeParams): Promise<Transaction> {
         console.log(`Staking: ${params.amount} ${params.asset} on ${params.chain})`);

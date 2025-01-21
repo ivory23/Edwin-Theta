@@ -5,12 +5,14 @@ import {
     type SupplyParams,
     type WithdrawParams,
 } from "../../types";
-import type { Transaction } from "../../types";
+import type { SupportedChain, Transaction } from "../../types";
 
 import { AaveV3Base } from "@bgd-labs/aave-address-book";
 import { EdwinEVMWallet } from "../../edwin-core/providers/evm_wallet";
 
 export class AaveProtocol implements ILendingProtocol {
+    public supportedChains: SupportedChain[] = ["base"];
+
     private async submitTransaction(
         provider: providers.Provider,
         wallet: ethers.Wallet,
@@ -34,8 +36,8 @@ export class AaveProtocol implements ILendingProtocol {
         };
     }
 
-    async supply(params: SupplyParams): Promise<Transaction> {
-        const { chain, amount, asset, data, walletProvider } = params;
+    async supply(params: SupplyParams, walletProvider: EdwinEVMWallet): Promise<Transaction> {
+        const { chain, amount, asset, data } = params;
         console.log(
             `Calling the inner AAVE logic to supply ${amount} ${asset}`
         );
