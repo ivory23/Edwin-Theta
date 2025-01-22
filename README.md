@@ -28,7 +28,7 @@ const edwinConfig: EdwinConfig = {
     actions: ['supply', 'withdraw', 'stake']
 };
 
-// Initialize the SDK
+// Initialize Edwin SDK
 const edwin = new Edwin(edwinConfig);
 
 // Supply tokens to a lending protocol
@@ -47,7 +47,7 @@ For detailed documentation, visit [docs.edwin.finance](https://docs.edwin.financ
 
 ## Contributing
 
-Contributions are welcome! Please read our [Contributing Guide](CONTRIBUTING.md) for details.
+Contributions are welcome! Please visit our [Contributing Guide](https://docs.edwin.finance) for details.
 
 ## License
 
