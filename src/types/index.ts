@@ -15,7 +15,7 @@ export interface Transaction {
     hash: Hash;
     from: Address;
     to: Address;
-    value: bigint;
+    value: number;
     data?: `0x${string}`;
     chainId?: number;
 }

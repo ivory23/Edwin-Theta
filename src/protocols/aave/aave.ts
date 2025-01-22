@@ -1,14 +1,15 @@
 import { Pool, EthereumTransactionTypeExtended } from "@aave/contract-helpers";
+import { AaveV3Base } from "@bgd-labs/aave-address-book";
 import { ethers, providers } from "ethers";
+import { EdwinEVMWallet } from "../../edwin-core/providers/evm_wallet";
 import {
     type ILendingProtocol,
     type SupplyParams,
     type WithdrawParams,
+    type Transaction,
+    type SupportedChain,
 } from "../../types";
-import type { SupportedChain, Transaction } from "../../types";
 
-import { AaveV3Base } from "@bgd-labs/aave-address-book";
-import { EdwinEVMWallet } from "../../edwin-core/providers/evm_wallet";
 
 export class AaveProtocol implements ILendingProtocol {
     public supportedChains: SupportedChain[] = ["base"];
@@ -17,7 +18,7 @@ export class AaveProtocol implements ILendingProtocol {
         provider: providers.Provider,
         wallet: ethers.Wallet,
         tx: EthereumTransactionTypeExtended
-    ): Promise<Transaction> {
+    ): Promise<ethers.providers.TransactionResponse> {
         console.log("Preparing to send transaction...");
         const extendedTxData = await tx.tx();
         console.log("Got extended transaction data");
@@ -27,13 +28,7 @@ export class AaveProtocol implements ILendingProtocol {
         console.log("Sending transaction...");
         const txResponse = await wallet.sendTransaction(txData);
         console.log(`Transaction sent with hash: ${txResponse.hash}`);
-
-        return {
-            hash: txResponse.hash as `0x${string}`,
-            from: from as `0x${string}`,
-            to: txData.to as `0x${string}`,
-            value: BigInt(txData.value || 0),
-        };
+        return txResponse;
     }
 
     async supply(params: SupplyParams, walletProvider: EdwinEVMWallet): Promise<Transaction> {
@@ -125,7 +120,13 @@ export class AaveProtocol implements ILendingProtocol {
                     results.push(result);
                 }
                 // Return the last transaction
-                return results[results.length - 1];
+                const finalTx = results[results.length - 1];
+                return {
+                    hash: finalTx.hash as `0x${string}`,
+                    from: finalTx.from as `0x${string}`,
+                    to: finalTx.to as `0x${string}`,
+                    value: Number(amount),
+                };
             }
 
             throw new Error("No transaction generated from Aave Pool");
