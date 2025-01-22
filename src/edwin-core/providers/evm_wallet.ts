@@ -17,7 +17,7 @@ import type {
 import * as viemChains from "viem/chains";
 import type { SupportedEVMChain } from "../../types";
 import { EdwinWallet } from "./wallet";
-
+import { ethers, providers } from "ethers";
 
 export const _SupportedEVMChainList = Object.keys(viemChains) as Array<
     keyof typeof viemChains
@@ -27,10 +27,13 @@ export class EdwinEVMWallet extends EdwinWallet {
     private currentChain: SupportedEVMChain = "mainnet";
     public chains: Record<string, Chain> = { ...viemChains };
     private account: PrivateKeyAccount;
+    private evmPrivateKey: `0x${string}`;
+    
     constructor(
         privateKey: `0x${string}`) {
         super(privateKey);
         this.account = privateKeyToAccount(privateKey);
+        this.evmPrivateKey = privateKey;
     }
 
     getAddress(): Address {
@@ -65,6 +68,13 @@ export class EdwinEVMWallet extends EdwinWallet {
         return walletClient;
     }
 
+    getEthersWallet(walletClient: WalletClient, provider: providers.JsonRpcProvider): ethers.Wallet {
+        const ethers_wallet = new ethers.Wallet(
+            this.evmPrivateKey,
+            provider
+        );
+        return ethers_wallet;
+    }
     getChainConfigs(chainName: SupportedEVMChain): Chain {
         const chain = viemChains[chainName];
 

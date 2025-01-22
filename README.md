@@ -31,18 +31,13 @@ const edwinConfig: EdwinConfig = {
 // Initialize the SDK
 const edwin = new Edwin(edwinConfig);
 
-
 // Supply tokens to a lending protocol
-await edwin.lending.supply({
-chain: 'ethereum',
-protocol: 'aave',
-amount: '100',
-asset: 'USDC'
+await edwin.actions.supply.execute({
+    protocol: 'aave',
+    chain: 'base',
+    amount: '100',
+    asset: 'usdc'
 });
-
-import { Edwin } from 'edwin';
-
-const edwin = new Edwin();
 ```
 
 
