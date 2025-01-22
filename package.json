@@ -1,0 +1,50 @@
+{
+  "name": "edwin-sdk",
+  "version": "0.3.3",
+  "description": "SDK for integrating AI agents with DeFi protocols",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest",
+    "lint": "eslint src",
+    "prepare": "npm run build",
+    "format": "prettier -c .prettierrc --write \"**/*.{ts,js,cjs,json,md}\"",
+    "format:check": "prettier -c .prettierrc --check \"**/*.{ts,js,cjs,json,md}\""
+  },
+  "keywords": [
+    "defi",
+    "ai",
+    "agents",
+    "blockchain",
+    "ethereum",
+    "sdk",
+    "defi",
+    "lending",
+    "borrowing",
+    "staking",
+    "yield"
+  ],
+  "author": "",
+  "license": "MIT",
+  "repository": "https://github.com/edwin-finance/edwin",
+  "devDependencies": {
+    "@lifi/data-types": "5.15.5",
+    "@lifi/sdk": "3.4.1",
+    "@lifi/types": "16.3.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "eslint": "^8.0.0",
+    "node-cache": "^5.1.2",
+    "tsup": "8.3.5",
+    "typescript": "^5.0.0",
+    "viem": "2.21.58",
+    "vitest": "^1.0.0"
+  },
+  "dependencies": {
+    "@bgd-labs/aave-address-book": "^4.7.4",
+    "@aave/contract-helpers": "^1.30.5",
+    "ethers": "^5.7.2",
+    "zod": "^3.24.1"
+  }
+}
