@@ -1,43 +1,49 @@
-import type { ILendingProtocol, IStakingProtocol, IDEXProtocol, EdwinWallet } from "../types";
+import type { ILendingProtocol, IStakingProtocol, IDEXProtocol } from "../types";
 import { AaveProtocol } from "./aave/aave";
 import { UniswapProtocol } from "./uniswap/uniswap";
 import { LidoProtocol } from "./lido/lido";
 
-const protocols: Record<
-    string,
-    ILendingProtocol | IStakingProtocol | IDEXProtocol
-> = {
-    // Lending
-    aave: new AaveProtocol(),
-    // DEX
-    uniswap: new UniswapProtocol(),
-    // Staking
-    lido: new LidoProtocol(),
-};
-
-export function getProtocol(
-    name: string
-): ILendingProtocol | IStakingProtocol | IDEXProtocol | undefined {
-    return protocols[name.toLowerCase()];
+const LendingProtocols = {
+    aave: AaveProtocol
 }
 
-// Type-safe getters for specific protocol types
-export function getLendingProtocol(name: string): ILendingProtocol | undefined {
-    const protocol = protocols[name.toLowerCase()];
-    // Verify that the protocol implements the ILendingProtocol interface
-    if (!protocol || !("supply" in protocol)) {
-        return undefined;
+const StakingProtocols = {
+    lido: LidoProtocol
+}
+
+const DEXProtocols = {
+    uniswap: UniswapProtocol
+}
+
+export function getLendingProtocol(name: string): ILendingProtocol {
+    if (!Object.keys(LendingProtocols).includes(name.toLowerCase())) {
+        throw new Error(`Unsupported lending protocol: ${name}`);
     }
-
-    return "supply" in protocol ? (protocol as ILendingProtocol) : undefined;
+    const Protocol = LendingProtocols[name.toLowerCase() as keyof typeof LendingProtocols];
+    if (Protocol) {
+        return new Protocol();
+    }
+    throw new Error(`Unsupported lending protocol: ${name}`);
 }
 
-export function getStakingProtocol(name: string): IStakingProtocol | undefined {
-    const protocol = protocols[name.toLowerCase()];
-    return "stake" in protocol ? (protocol as IStakingProtocol) : undefined;
+export function getStakingProtocol(name: string): IStakingProtocol {
+    if (!Object.keys(StakingProtocols).includes(name.toLowerCase())) {
+        throw new Error(`Unsupported staking protocol: ${name}`);
+    }
+    const Protocol = StakingProtocols[name.toLowerCase() as keyof typeof StakingProtocols];
+    if (Protocol) {
+        return new Protocol();
+    }
+    throw new Error(`Unsupported staking protocol: ${name}`);
 }
 
-export function getDEXProtocol(name: string): IDEXProtocol | undefined {
-    const protocol = protocols[name.toLowerCase()];
-    return "swap" in protocol ? (protocol as IDEXProtocol) : undefined;
+export function getDEXProtocol(name: string): IDEXProtocol {
+    if (!Object.keys(DEXProtocols).includes(name.toLowerCase())) {
+        throw new Error(`Unsupported DEX protocol: ${name}`);
+    }
+    const Protocol = DEXProtocols[name.toLowerCase() as keyof typeof DEXProtocols];
+    if (Protocol) {
+        return new Protocol();
+    }
+    throw new Error(`Unsupported DEX protocol: ${name}`);
 }

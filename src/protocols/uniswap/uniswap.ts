@@ -1,12 +1,12 @@
-import { parseEther, type Hex } from "viem";
-import type { IDEXProtocol, SwapParams, LiquidityParams } from "../../types";
+import type { IDEXProtocol, SwapParams, LiquidityParams, EdwinWallet, SupportedChain } from "../../types";
 import type { Transaction } from "../../types";
 import { EdwinEVMWallet } from "../../edwin-core/providers/evm_wallet";
 
 export class UniswapProtocol implements IDEXProtocol {
-    async swap(params: SwapParams): Promise<Transaction> {
+    supportedChains: SupportedChain[] = ["mainnet"];
+
+    async swap(params: SwapParams, walletProvider: EdwinEVMWallet): Promise<Transaction> {
         const {
-            walletProvider,
             chain,
             contract,
             tokenIn,
@@ -15,28 +15,11 @@ export class UniswapProtocol implements IDEXProtocol {
             slippage,
         } = params;
 
-        if (!(walletProvider instanceof EdwinEVMWallet)) {
-            throw new Error('Wallet provider is not an instance of EdwinEVMWallet');
-        }
-        const evmWallet = walletProvider as EdwinEVMWallet;
-        evmWallet.switchChain(chain);
-        console.log(`Switched to chain: ${chain}`);
-
-        const walletClient = evmWallet.getWalletClient(chain);
-
-        // Implement Uniswap-specific swap logic here
-        // Example mock implementation
-        return {
-            hash: "0x123",
-            from: walletClient.account?.address || "0x456",
-            to: "0x789",
-            value: parseEther(amount),
-        };
+        throw new Error("Not implemented");
     }
 
-    async addLiquidity(params: LiquidityParams): Promise<Transaction> {
+    async addLiquidity(params: LiquidityParams, walletProvider: EdwinEVMWallet): Promise<Transaction> {
         const {
-            walletProvider,
             chain,
             contract,
             tokenA,
@@ -45,26 +28,10 @@ export class UniswapProtocol implements IDEXProtocol {
             amountB,
         } = params;
 
-        if (!(walletProvider instanceof EdwinEVMWallet)) {
-            throw new Error('Wallet provider is not an instance of EdwinEVMWallet');
-        }
-        const evmWallet = walletProvider as EdwinEVMWallet;
-        evmWallet.switchChain(chain);
-        console.log(`Switched to chain: ${chain}`);
-
-        const walletClient = evmWallet.getWalletClient(chain);
-
-        // Implement Uniswap-specific liquidity addition logic
-        return {
-            hash: "0x123",
-            from: walletClient.account?.address || "0x456",
-            to: "0x789",
-            value: parseEther("0"),
-        };
+        throw new Error("Not implemented");
     }
 
     async getQuote(params: SwapParams): Promise<string> {
-        // Implement quote logic
-        return "0";
+        throw new Error("Not implemented");
     }
 }

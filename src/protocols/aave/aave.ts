@@ -10,18 +10,14 @@ import {
     type SupportedChain,
     type SupportedEVMChain,
 } from "../../types";
-import { Address } from "viem";
-
 
 export class AaveProtocol implements ILendingProtocol {
     public supportedChains: SupportedChain[] = ["base"];
 
     private getAaveChain(chain: SupportedChain): SupportedEVMChain {
-        // Check if the chain is in our supported chains list
         if (!this.supportedChains.includes(chain)) {
             throw new Error(`Chain ${chain} is not supported by Aave protocol`);
         }
-        // At this point, chain must be an EVM chain from our supported list
         return chain as SupportedEVMChain;
     }
 
@@ -30,16 +26,9 @@ export class AaveProtocol implements ILendingProtocol {
         wallet: ethers.Wallet,
         tx: EthereumTransactionTypeExtended
     ): Promise<ethers.providers.TransactionResponse> {
-        console.log("Preparing to send transaction...");
         const extendedTxData = await tx.tx();
-        console.log("Got extended transaction data");
         const { from, ...txData } = extendedTxData;
-        console.log(`Transaction from address: ${from}`);
-
-        console.log("Sending transaction...");
-        const txResponse = await wallet.sendTransaction(txData);
-        console.log(`Transaction sent with hash: ${txResponse.hash}`);
-        return txResponse;
+        return await wallet.sendTransaction(txData);
     }
 
     async supply(params: SupplyParams, walletProvider: EdwinEVMWallet): Promise<Transaction> {
@@ -142,7 +131,7 @@ export class AaveProtocol implements ILendingProtocol {
         }
     }
 
-    async withdraw(params: WithdrawParams): Promise<Transaction> {
+    async withdraw(params: WithdrawParams, walletProvider: EdwinEVMWallet): Promise<Transaction> {
         const { amount, asset } = params;
         console.log(
             `Calling the inner AAVE logic to withdraw ${amount} ${asset}`
