@@ -4,8 +4,7 @@ import {
   SupplyAction,
   WithdrawAction,
   StakeAction
- } from '../edwin-core/actions';
-
+} from '../edwin-core/actions';
 
 const ACTION_MAP: Record<string, new (provider: EdwinProvider) => EdwinAction> = {
   'supply': SupplyAction,
@@ -13,28 +12,33 @@ const ACTION_MAP: Record<string, new (provider: EdwinProvider) => EdwinAction> =
   'stake': StakeAction,
 };
 
+type SupportedActions = keyof typeof ACTION_MAP;
+type ActionMap = {
+  [K in SupportedActions]: InstanceType<typeof ACTION_MAP[K]>
+}
+
 export class Edwin {
   public provider: EdwinProvider;
-  public actions: EdwinAction[] = [];
+  public actions: ActionMap;
 
   constructor(config: EdwinConfig) {
     // Initialize provider
     this.provider = new EdwinProvider(config);
 
-    // Initialize actions with the wallet
-    this.actions = config.actions
-      .map(actionName => {
-        const ActionClass = ACTION_MAP[actionName.toLowerCase()];
-        if (!ActionClass) {
-          throw new Error(`Unsupported action: ${actionName}`);
-        }
-        // Give each action the provider for usage in the action
-        return new ActionClass(this.provider);
-      })
-      .filter((action): action is EdwinAction => action !== null);
+    // Initialize actions dynamically based on config
+    this.actions = config.actions.reduce((acc, actionName) => {
+      const ActionClass = ACTION_MAP[actionName.toLowerCase() as SupportedActions];
+      if (!ActionClass) {
+        throw new Error(`Unsupported action: ${actionName}`);
+      }
+      return {
+        ...acc,
+        [actionName.toLowerCase()]: new ActionClass(this.provider)
+      };
+    }, {} as ActionMap);
   }
 
   public async getActions() {
-    return this.actions;
+    return Object.values(this.actions);
   }
 }
