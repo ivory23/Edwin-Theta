@@ -8,11 +8,22 @@ import {
     type WithdrawParams,
     type Transaction,
     type SupportedChain,
+    type SupportedEVMChain,
 } from "../../types";
+import { Address } from "viem";
 
 
 export class AaveProtocol implements ILendingProtocol {
     public supportedChains: SupportedChain[] = ["base"];
+
+    private getAaveChain(chain: SupportedChain): SupportedEVMChain {
+        // Check if the chain is in our supported chains list
+        if (!this.supportedChains.includes(chain)) {
+            throw new Error(`Chain ${chain} is not supported by Aave protocol`);
+        }
+        // At this point, chain must be an EVM chain from our supported list
+        return chain as SupportedEVMChain;
+    }
 
     private async submitTransaction(
         provider: providers.Provider,
@@ -38,10 +49,10 @@ export class AaveProtocol implements ILendingProtocol {
         );
 
         try {
-            walletProvider.switchChain(chain);
+            const aaveChain = this.getAaveChain(chain);      
+            walletProvider.switchChain(aaveChain);
             console.log(`Switched to chain: ${chain}`);
-
-            const walletClient = walletProvider.getWalletClient(chain);
+            const walletClient = walletProvider.getWalletClient(aaveChain);
             console.log(`Got wallet client for chain: ${chain}`);
 
             // Log the RPC URL from the transport
@@ -49,13 +60,7 @@ export class AaveProtocol implements ILendingProtocol {
             const provider = new providers.JsonRpcProvider(walletClient.transport.url);
             console.log(`Created ethers provider`);
 
-            if (!process.env.EVM_PRIVATE_KEY) {
-                throw new Error("EVM_PRIVATE_KEY is not set");
-            }
-            const ethers_wallet = new ethers.Wallet(
-                process.env.EVM_PRIVATE_KEY,
-                provider
-            );
+            const ethers_wallet = walletProvider.getEthersWallet(walletClient, provider);
             ethers_wallet.connect(provider);
             console.log(`Created ethers wallet`);
 

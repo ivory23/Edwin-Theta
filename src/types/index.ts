@@ -59,11 +59,10 @@ export interface EdwinConfig {
 // Base interface for all protocol parameters
 export interface ActionParams {
     protocol: string;
-    chain: SupportedEVMChain;
+    chain: SupportedChain;
     amount: string;
     asset: string;
     data?: string;
-    walletProvider: EdwinWallet;
 }
 
 export interface SupplyParams extends ActionParams {}
