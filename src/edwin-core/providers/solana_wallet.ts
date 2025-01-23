@@ -7,7 +7,7 @@ export class EdwinSolanaWallet extends EdwinWallet {
     private wallet_address: PublicKey;
 
     constructor(protected privateKey: string) {
-        super(privateKey);
+        super();
         this.wallet = Keypair.fromSecretKey(bs58.decode(privateKey));
         this.wallet_address = this.wallet.publicKey;
     }

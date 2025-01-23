@@ -26,9 +26,10 @@ export class LuloProtocol implements ILendingProtocol {
                     }),
                   },
             );
+            console.log(response);
             const {
                 data: { transactionMeta },
-              } = await response.json();
+            } = await response.json();
 
             // Deserialize the transaction
             const luloTxn = VersionedTransaction.deserialize(

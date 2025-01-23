@@ -27,9 +27,8 @@ export class EdwinEVMWallet extends EdwinWallet {
     private account: PrivateKeyAccount;
     private evmPrivateKey: `0x${string}`;
     
-    constructor(
-        privateKey: `0x${string}`) {
-        super(privateKey);
+    constructor(privateKey: `0x${string}`) {
+        super();
         this.account = privateKeyToAccount(privateKey);
         this.evmPrivateKey = privateKey;
     }
