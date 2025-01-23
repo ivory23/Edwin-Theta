@@ -19,9 +19,7 @@ import type { SupportedEVMChain } from "../../types";
 import { EdwinWallet } from "./wallet";
 import { ethers, providers } from "ethers";
 
-export const _SupportedEVMChainList = Object.keys(viemChains) as Array<
-    keyof typeof viemChains
->;
+export const _SupportedEVMChainList = Object.keys(viemChains) as Array<keyof typeof viemChains>;
 
 export class EdwinEVMWallet extends EdwinWallet {
     private currentChain: SupportedEVMChain = "mainnet";

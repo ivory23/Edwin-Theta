@@ -1,13 +1,18 @@
 import { EdwinConfig, SupportedChain } from "../../types";
 import { EdwinEVMWallet, _SupportedEVMChainList } from "./evm_wallet";
+import { EdwinSolanaWallet } from "./solana_wallet";
 import { EdwinWallet } from "./wallet";
 
 export class EdwinProvider {
     public wallets: Record<string, EdwinWallet> = {};
 
     constructor(config: EdwinConfig) {
-        this.wallets['evm'] = new EdwinEVMWallet(config.evmPrivateKey);
-        // Extendable to add more wallets such as solana
+        if (config.evmPrivateKey) {
+            this.wallets['evm'] = new EdwinEVMWallet(config.evmPrivateKey);
+        }
+        if (config.solanaPrivateKey) {
+            this.wallets['solana'] = new EdwinSolanaWallet(config.solanaPrivateKey);
+        }
     }
 
     getWallet(chain: SupportedChain): EdwinWallet {

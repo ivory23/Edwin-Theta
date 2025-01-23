@@ -2,9 +2,12 @@ import type { ILendingProtocol, IStakingProtocol, IDEXProtocol } from "../types"
 import { AaveProtocol } from "./aave/aave";
 import { UniswapProtocol } from "./uniswap/uniswap";
 import { LidoProtocol } from "./lido/lido";
+import { LuloProtocol } from "./lulo";
+
 
 const LendingProtocols = {
-    aave: AaveProtocol
+    aave: AaveProtocol,
+    lulo: LuloProtocol
 }
 
 const StakingProtocols = {

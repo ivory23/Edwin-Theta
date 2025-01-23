@@ -52,7 +52,7 @@ export interface ChainMetadata {
 
 export interface EdwinConfig {
     evmPrivateKey: `0x${string}`;
-    solanaPrivateKey: `0x${string}`;
+    solanaPrivateKey: string;
     actions: string[];
 }
 

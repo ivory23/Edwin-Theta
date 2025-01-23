@@ -5,8 +5,8 @@ import { Address } from "viem";
 export class EdwinWallet {
     private address: Address | undefined;
 
-    constructor(protected privateKey: `0x${string}`) {
-        this.address = privateKeyToAddress(privateKey);
+    constructor(protected privateKey: string) {
+        this.address = privateKeyToAddress(privateKey as `0x${string}`);
     }
     
     getAddress(): Address | undefined {
