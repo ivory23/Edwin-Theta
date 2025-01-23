@@ -10,6 +10,9 @@ export class LuloProtocol implements ILendingProtocol {
 
     async supply(params: SupplyParams, walletProvider: EdwinSolanaWallet): Promise<Transaction> {
         try {
+            if (!process.env.FLEXLEND_API_KEY) {
+                throw new Error("FLEXLEND_API_KEY is not set (For lulo.fi)");
+            }
             const response = await fetch(
                 `https://api.flexlend.fi/generate/account/deposit?priorityFee=50000`,
                 {
