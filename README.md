@@ -1,8 +1,8 @@
-# Edwin SDK
+# Edwin 🦉 - DeFAI Layer
 
 ![Edwin Overview](docs/static/img/edwin_overview.avif)
 
-Edwin is a TypeScript SDK for integrating AI agents with DeFi protocols. It provides a simple interface for AI agents to interact with various DeFi operations like lending, borrowing, and liquidity provision.
+Edwin is a TypeScript library that serves as the bridge between AI agents and DeFi protocols. It provides a unified, secure interface for AI agents to interact with various DeFi protocols while abstracting away the complexity of blockchain operations and protocol-specific implementations. This enables the creation of sophisticated DeFAI agents.
 
 ## Installation
 
