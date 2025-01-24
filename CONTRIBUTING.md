@@ -73,7 +73,7 @@ We categorize issues and PRs with labels to maintain clarity:
 ---
 
 ## Getting Help
-- Join our [Discord](https://discord.gg/2NKmbNhM) community 
+- Join our [Discord](https://discord.gg/QNA55N3KtF) community 
 - Submit a GitHub issue if you can't find your answer
 
 ---
