@@ -2,7 +2,7 @@ import { EdwinAction } from "../../types";
 import { EdwinProvider } from "../providers";
 import { IDEXProtocol } from "../../types";
 import { getDEXProtocol } from "../../protocols";
-import { addLiquidityTemplate, removeLiquidityTemplate } from "../templates";
+import { addLiquidityTemplate, removeLiquidityTemplate, getPoolsTemplate } from "../templates";
 
 
 export class SwapAction implements EdwinAction {
@@ -65,5 +65,27 @@ export class RemoveLiquidityAction implements EdwinAction {
 
         const wallet = this.provider.getWallet(params.chain);
         return await protocol.removeLiquidity(params, wallet);
+    }
+}
+
+export class GetPoolsAction implements EdwinAction {
+    name = "getPools";
+    description = "Get pools from a DEX";
+    template = getPoolsTemplate;
+    provider: EdwinProvider;
+
+    constructor(provider: EdwinProvider) {
+        this.provider = provider;
+    }
+
+    async execute(params: any): Promise<any> {
+        const protocol = getDEXProtocol(params.protocol) as IDEXProtocol;
+        if (!protocol) {
+            throw new Error(`Protocol ${params.protocol} not found`);
+        }
+        if (!protocol.getPools) {
+            throw new Error(`Protocol ${params.protocol} does not support getPools`);
+        }
+        return await protocol.getPools(params.tokenA, params.tokenB);
     }
 }

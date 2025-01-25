@@ -84,3 +84,30 @@ Provide the final output in JSON format:
 }
 \`\`\`
 `;
+
+
+export const getPoolsTemplate = `You are an AI assistant specialized in processing DeFi liquidity provision requests. Your task is to extract specific information from user messages and format it into a structured JSON response.
+
+First, review the recent messages from the conversation:
+
+<recent_messages>
+{{recentMessages}}
+</recent_messages>
+
+Your goal is to extract the following information about the requested liquidity provision:
+1. Name of first token
+2. Name of second token
+3. Protocol to use (DEX)
+4. Chain to execute on
+
+Provide the final output in JSON format:
+
+\`\`\`json
+{
+    "tokenA": string,
+    "tokenB": string,
+    "protocol": string,
+    "chain": string
+}
+\`\`\`
+`; 

@@ -2,19 +2,44 @@ import { IDEXProtocol, SwapParams, LiquidityParams, Transaction, SupportedChain 
 import { EdwinSolanaWallet } from "../../edwin-core/providers/solana_wallet";
 import DLMM, { StrategyType } from "@meteora-ag/dlmm";
 import { Keypair, PublicKey, sendAndConfirmTransaction } from "@solana/web3.js";
-import { BN } from '@coral-xyz/anchor';
+import BN from 'bn.js';
 
 
 interface MeteoraPool {
     address: string;
     name: string;
-    // ... other pool properties
+    mint_x: string;
+    mint_y: string;
+    reserve_x: string;
+    reserve_y: string;
+    reserve_x_amount: number;
+    reserve_y_amount: number;
+    bin_step: number;
+    base_fee_percentage: string;
+    max_fee_percentage: string;
+    protocol_fee_percentage: string;
+    liquidity: string;
+    reward_mint_x: string;
+    reward_mint_y: string;
+    fees_24h: number;
+    today_fees: number;
+    trade_volume_24h: number;
+    cumulative_trade_volume: string;
+    cumulative_fee_volume: string;
+    current_price: number;
+    apr: number;
+    apy: number;
+    farm_apr: number;
+    farm_apy: number;
+    hide: boolean;
 }
+
+
 
 export class MeteoraProtocol implements IDEXProtocol {
     public supportedChains: SupportedChain[] = ["solana"];
 
-    private async getPoolAddress(tokenA: string, tokenB: string): Promise<string> {
+    private async getPoolAddress(tokenA: string, tokenB: string): Promise<MeteoraPool> {
         const response = await fetch('https://dlmm-api.meteora.ag/pair/all');
         const pools: MeteoraPool[] = await response.json();
         const poolName = `${tokenA}-${tokenB}`;
@@ -28,7 +53,7 @@ export class MeteoraProtocol implements IDEXProtocol {
             throw new Error(`No pool found for ${tokenA}-${tokenB}`);
         }
 
-        return pool.address;
+        return pool;
     }
 
     async swap(params: SwapParams, walletProvider: EdwinSolanaWallet): Promise<Transaction> {
@@ -42,7 +67,16 @@ export class MeteoraProtocol implements IDEXProtocol {
         }
     }
 
-    async addLiquidity(params: LiquidityParams, walletProvider: EdwinSolanaWallet): Promise<Transaction> {
+    async getPools(tokenA: string, tokenB: string, limit: number = 10): Promise<MeteoraPool[]> {
+        const response = await fetch(`https://dlmm-api.meteora.ag/pair/all_with_pagination?search_term=${tokenA}-${tokenB}&limit=${limit}`);
+        const pools: MeteoraPool[] = await response.json();
+        if (!pools) {
+            throw new Error(`No pool found for ${tokenA}-${tokenB}`);
+        }
+        return pools;
+    }
+    
+    async addLiquidity(params: LiquidityParams, walletProvider: EdwinSolanaWallet): Promise<string> {
         const { chain, asset, amount, assetB, amountB } = params;
         console.log(`Calling Meteora protocol to add liquidity ${amount} ${asset} and ${amountB} ${assetB}`);
 
@@ -51,17 +85,11 @@ export class MeteoraProtocol implements IDEXProtocol {
                 throw new Error("Meteora protocol only supports Solana");
             }
             const connection = walletProvider.getConnection();
-            
-            console.log("🚀 ~ addLiquidity ~ asset:", asset)
-            const a = new BN(1.5);
-            const a2 = new BN(parseFloat('1.5'));
-            console.log("🚀 ~ addLiquidity ~ assetB:", assetB)
-            const b = new BN(parseFloat(amount));
-            console.log("🚀 ~ addLiquidity ~ b:", b)
-
             // Get pool address for token pair
-            const poolAddress = await this.getPoolAddress(asset, assetB);
-            const dlmmPool = await DLMM.create(connection, new PublicKey(poolAddress));
+            const pool = await this.getPoolAddress(asset, assetB);
+            console.log("🚀 ~ addLiquidity ~ pool:", pool.name);
+            console.log("🚀 ~ addLiquidity ~ pool:", pool.address);
+            const dlmmPool = await DLMM.create(connection, new PublicKey(pool.address));
             
             const activeBin = await dlmmPool.getActiveBin();
 
@@ -70,35 +98,33 @@ export class MeteoraProtocol implements IDEXProtocol {
             const maxBinId = activeBin.binId + TOTAL_RANGE_INTERVAL;
             
             const activeBinPricePerToken = dlmmPool.fromPricePerLamport(Number(activeBin.price));
-            const totalXAmount = new BN(amount);
-            // const totalYAmount = totalXAmount.mul(new BN(Number(activeBinPricePerToken)));
-            const totalYAmount = new BN(amountB);
+            console.log("🚀 ~ addLiquidity ~ activeBinPricePerToken:", activeBinPricePerToken)
+            console.log(activeBin.price);
+            const totalXAmount = new BN(100);
+            const totalYAmount = totalXAmount.mul(new BN(Number(activeBinPricePerToken)));
             const newBalancePosition = Keypair.generate();
-            
-            const createPositionTx = await dlmmPool.initializePositionAndAddLiquidityByStrategy({
-                positionPubKey: newBalancePosition.publicKey,
-                user: walletProvider.getPublicKey(),
-                totalXAmount,
-                totalYAmount,
-                strategy: {
-                    maxBinId,
-                    minBinId,
-                    strategyType: StrategyType.SpotBalanced,
-                },
-            });
+            console.log("totalXAmount", totalXAmount.toString());
+            console.log("totalYAmount", totalYAmount.toString());
 
-            const createBalancePositionTxHash = await sendAndConfirmTransaction(
-                connection,
-                createPositionTx,
-                [walletProvider.getSigner(), newBalancePosition]
-              );
-              console.log(
-                "🚀 ~ createBalancePositionTxHash:",
-                createBalancePositionTxHash
-              );
+            // const createPositionTx = await dlmmPool.initializePositionAndAddLiquidityByStrategy({
+            //     positionPubKey: newBalancePosition.publicKey,
+            //     user: walletProvider.getPublicKey(),
+            //     totalXAmount,
+            //     totalYAmount,
+            //     strategy: {
+            //         maxBinId,
+            //         minBinId,
+            //         strategyType: StrategyType.SpotBalanced,
+            //     },
+            // });
 
-            // TODO: Implement Meteora add liquidity logic
-            throw new Error("Meteora add liquidity not implemented");
+            // const createBalancePositionTxHash = await sendAndConfirmTransaction(
+            //     connection,
+            //     createPositionTx,
+            //     [walletProvider.getSigner(), newBalancePosition]
+            //   );
+            return "amountX: " + totalXAmount.toString() + " amountY: " + totalYAmount.toString();
+            // return createBalancePositionTxHash as `0x${string}`;
         } catch (error: unknown) {
             console.error("Meteora add liquidity error:", error);
             const message = error instanceof Error ? error.message : String(error);

@@ -18,7 +18,7 @@ export class UniswapProtocol implements IDEXProtocol {
         throw new Error("Not implemented");
     }
 
-    async addLiquidity(params: LiquidityParams, walletProvider: EdwinEVMWallet): Promise<Transaction> {
+    async addLiquidity(params: LiquidityParams, walletProvider: EdwinEVMWallet): Promise<string> {
         const {
             chain,
             asset,

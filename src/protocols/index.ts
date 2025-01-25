@@ -1,9 +1,9 @@
 import type { ILendingProtocol, IStakingProtocol, IDEXProtocol } from "../types";
 import { AaveProtocol } from "./aave";
 import { LidoProtocol } from "./lido";
-import { UniswapProtocol } from "./uniswap";
 import { LuloProtocol } from "./lulo";
 import { MeteoraProtocol } from "./meteora";
+import { UniswapProtocol } from "./uniswap";
 
 const LendingProtocols = {
     aave: AaveProtocol,

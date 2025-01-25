@@ -81,7 +81,7 @@ export interface SwapParams extends ActionParams {
 
 export interface LiquidityParams extends ActionParams {
     assetB: string;
-    amountB: string;
+    amountB?: string;
 }
 
 export interface DeFiProtocol {
@@ -101,9 +101,10 @@ export interface IStakingProtocol extends DeFiProtocol {
 
 export interface IDEXProtocol extends DeFiProtocol {
     swap(params: SwapParams, walletProvider: EdwinWallet): Promise<Transaction>;
-    addLiquidity(params: LiquidityParams, walletProvider: EdwinWallet): Promise<Transaction>;
+    addLiquidity(params: LiquidityParams, walletProvider: EdwinWallet): Promise<string>;
     removeLiquidity(params: LiquidityParams, walletProvider: EdwinWallet): Promise<Transaction>;
     getQuote?(params: SwapParams, walletProvider: EdwinWallet): Promise<string>;
+    getPools?(tokenA: string, tokenB: string, limit?: number): Promise<any>;
 }
 
 export interface EdwinAction {
@@ -111,5 +112,5 @@ export interface EdwinAction {
     description: string;
     template: string;
     provider: EdwinProvider;
-    execute: (params: ActionParams) => Promise<Transaction>;
+    execute: (params: any) => Promise<any>;
 }

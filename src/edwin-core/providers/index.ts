@@ -3,6 +3,7 @@ import { EdwinEVMWallet, _SupportedEVMChainList } from "./evm_wallet";
 import { EdwinSolanaWallet } from "./solana_wallet";
 import { EdwinWallet } from "./wallet";
 
+
 export class EdwinProvider {
     public wallets: Record<string, EdwinWallet> = {};
 
