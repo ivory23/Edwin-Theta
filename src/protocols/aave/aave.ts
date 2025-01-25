@@ -26,9 +26,18 @@ export class AaveProtocol implements ILendingProtocol {
         wallet: ethers.Wallet,
         tx: EthereumTransactionTypeExtended
     ): Promise<ethers.providers.TransactionResponse> {
-        const extendedTxData = await tx.tx();
-        const { from, ...txData } = extendedTxData;
-        return await wallet.sendTransaction(txData);
+        try {
+            const extendedTxData = await tx.tx();
+            const { from, ...txData } = extendedTxData;
+            return await wallet.sendTransaction(txData);
+        } catch (error: any) {
+            // Check if error contains gas estimation error details
+            if (error.code === 'UNPREDICTABLE_GAS_LIMIT') {
+                const reason = error.error?.body ? JSON.parse(error.error.body).error.message : error.reason;
+                throw new Error(`Transaction failed: ${reason}`);
+            }
+            throw error;
+        }
     }
 
     async supply(params: SupplyParams, walletProvider: EdwinEVMWallet): Promise<Transaction> {
@@ -122,8 +131,9 @@ export class AaveProtocol implements ILendingProtocol {
                     value: Number(amount),
                 };
             }
-
-            throw new Error("No transaction generated from Aave Pool");
+            else {
+                throw new Error("No transaction generated from Aave Pool");
+            }
         } catch (error: unknown) {
             console.error("Aave supply error:", error);
             const message = error instanceof Error ? error.message : String(error);

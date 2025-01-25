@@ -1,9 +1,7 @@
-import type { EdwinProvider, Transaction } from "../../types";
-import { SupplyParams, WithdrawParams } from "../../types";
+import type { EdwinProvider, Transaction, SupplyParams, WithdrawParams, EdwinAction } from "../../types";
 import { getLendingProtocol } from "../../protocols";
-import { EdwinAction } from "../../types";
-import { supplyTemplate, withdrawTemplate } from "../templates";
 import { EdwinWallet } from "../providers";
+import { supplyTemplate, withdrawTemplate } from "../templates";
 
 export class SupplyAction implements EdwinAction {
     public name = 'supply';

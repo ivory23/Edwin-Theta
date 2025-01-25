@@ -1,9 +1,8 @@
 import type { ILendingProtocol, IStakingProtocol, IDEXProtocol } from "../types";
-import { AaveProtocol } from "./aave/aave";
-import { UniswapProtocol } from "./uniswap/uniswap";
-import { LidoProtocol } from "./lido/lido";
+import { AaveProtocol } from "./aave";
+import { LidoProtocol } from "./lido";
+import { UniswapProtocol } from "./uniswap";
 import { LuloProtocol } from "./lulo";
-
 
 const LendingProtocols = {
     aave: AaveProtocol,
@@ -15,7 +14,7 @@ const StakingProtocols = {
 }
 
 const DEXProtocols = {
-    uniswap: UniswapProtocol
+    uniswap: UniswapProtocol,
 }
 
 export function getLendingProtocol(name: string): ILendingProtocol {

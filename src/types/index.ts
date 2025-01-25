@@ -51,8 +51,8 @@ export interface ChainMetadata {
 }
 
 export interface EdwinConfig {
-    evmPrivateKey: `0x${string}`;
-    solanaPrivateKey: string;
+    evmPrivateKey?: `0x${string}`;
+    solanaPrivateKey?: string;
     actions: string[];
 }
 
@@ -103,8 +103,8 @@ export interface IStakingProtocol extends DeFiProtocol {
 
 export interface IDEXProtocol extends DeFiProtocol {
     swap(params: SwapParams, walletProvider: EdwinWallet): Promise<Transaction>;
-    addLiquidity?(params: LiquidityParams, walletProvider: EdwinWallet): Promise<Transaction>;
-    removeLiquidity?(params: LiquidityParams, walletProvider: EdwinWallet): Promise<Transaction>;
+    addLiquidity(params: LiquidityParams, walletProvider: EdwinWallet): Promise<Transaction>;
+    removeLiquidity(params: LiquidityParams, walletProvider: EdwinWallet): Promise<Transaction>;
     getQuote?(params: SwapParams, walletProvider: EdwinWallet): Promise<string>;
 }
 

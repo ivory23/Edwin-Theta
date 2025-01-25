@@ -9,7 +9,7 @@ import {
 const ACTION_MAP: Record<string, new (provider: EdwinProvider) => EdwinAction> = {
   'supply': SupplyAction,
   'withdraw': WithdrawAction,
-  'stake': StakeAction,
+  'stake': StakeAction
 };
 
 type SupportedActions = keyof typeof ACTION_MAP;
@@ -27,13 +27,13 @@ export class Edwin {
 
     // Initialize actions dynamically based on config
     this.actions = config.actions.reduce((acc, actionName) => {
-      const ActionClass = ACTION_MAP[actionName.toLowerCase() as SupportedActions];
+      const ActionClass = ACTION_MAP[actionName as SupportedActions];
       if (!ActionClass) {
         throw new Error(`Unsupported action: ${actionName}`);
       }
       return {
         ...acc,
-        [actionName.toLowerCase()]: new ActionClass(this.provider)
+        [actionName]: new ActionClass(this.provider)
       };
     }, {} as ActionMap);
   }
