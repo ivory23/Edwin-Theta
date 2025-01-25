@@ -1,1 +1,3 @@
-export abstract class EdwinWallet {}
+export abstract class EdwinWallet {
+    abstract getAddress(): string;
+}

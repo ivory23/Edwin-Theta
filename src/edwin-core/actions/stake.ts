@@ -1,7 +1,7 @@
 import type { Transaction, EdwinAction, StakeParams } from "../../types";
 import { EdwinProvider } from "../providers";
 import { stakeTemplate } from "../templates";
-// Exported for tests
+
 export class StakeAction implements EdwinAction {
     public name = 'stake';
     public description = 'Stake assets to a staking protocol';

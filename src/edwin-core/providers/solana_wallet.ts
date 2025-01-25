@@ -23,4 +23,12 @@ export class EdwinSolanaWallet extends EdwinWallet {
     signTransaction(transaction: VersionedTransaction) {
         transaction.sign([this.wallet]);
     }
+
+    getAddress(): string {
+        return this.wallet_address.toBase58();
+    }
+
+    getSigner(): Keypair {
+        return this.wallet;
+    }
 }
