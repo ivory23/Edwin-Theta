@@ -80,9 +80,7 @@ export interface SwapParams extends ActionParams {
 }
 
 export interface LiquidityParams extends ActionParams {
-    contract: string;
-    tokenA: string;
-    tokenB: string;
+    assetB: string;
     amountB: string;
 }
 

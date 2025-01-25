@@ -17,7 +17,7 @@ export class EdwinSolanaWallet extends EdwinWallet {
     }
 
     getConnection(customRpcUrl?: string): Connection {
-        return new Connection(customRpcUrl || process.env.SOLANA_RPC_URL!, 'confirmed');
+        return new Connection(customRpcUrl || process.env.SOLANA_RPC_URL! || 'https://api.mainnet-beta.solana.com', 'confirmed');
     }
 
     signTransaction(transaction: VersionedTransaction) {

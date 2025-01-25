@@ -3,6 +3,7 @@ import { AaveProtocol } from "./aave";
 import { LidoProtocol } from "./lido";
 import { UniswapProtocol } from "./uniswap";
 import { LuloProtocol } from "./lulo";
+import { MeteoraProtocol } from "./meteora";
 
 const LendingProtocols = {
     aave: AaveProtocol,
@@ -15,6 +16,7 @@ const StakingProtocols = {
 
 const DEXProtocols = {
     uniswap: UniswapProtocol,
+    meteora: MeteoraProtocol
 }
 
 export function getLendingProtocol(name: string): ILendingProtocol {

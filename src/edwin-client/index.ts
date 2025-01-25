@@ -3,13 +3,15 @@ import { EdwinProvider } from '../edwin-core/providers';
 import {
   SupplyAction,
   WithdrawAction,
-  StakeAction
+  StakeAction,
+  AddLiquidityAction
 } from '../edwin-core/actions';
 
 const ACTION_MAP: Record<string, new (provider: EdwinProvider) => EdwinAction> = {
   'supply': SupplyAction,
   'withdraw': WithdrawAction,
-  'stake': StakeAction
+  'stake': StakeAction,
+  'addLiquidity': AddLiquidityAction
 };
 
 type SupportedActions = keyof typeof ACTION_MAP;
