@@ -26,11 +26,6 @@ export class AaveProtocol implements ILendingProtocol {
         wallet: ethers.Wallet,
         tx: EthereumTransactionTypeExtended
     ): Promise<ethers.providers.TransactionResponse> {
-<<<<<<< Updated upstream
-        const extendedTxData = await tx.tx();
-        const { from, ...txData } = extendedTxData;
-        return await wallet.sendTransaction(txData);
-=======
         try {
             const extendedTxData = await tx.tx();
             const { from, ...txData } = extendedTxData;
@@ -43,7 +38,6 @@ export class AaveProtocol implements ILendingProtocol {
             }
             throw error;
         }
->>>>>>> Stashed changes
     }
 
     async supply(params: SupplyParams, walletProvider: EdwinEVMWallet): Promise<Transaction> {
