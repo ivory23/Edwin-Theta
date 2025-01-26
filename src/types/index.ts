@@ -113,5 +113,5 @@ export interface EdwinAction {
     description: string;
     template: string;
     provider: EdwinProvider;
-    execute: (params: any) => Promise<any>;
+    execute: (params: ActionParams) => Promise<any>;
 }
