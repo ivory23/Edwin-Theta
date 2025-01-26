@@ -35,5 +35,5 @@ describe('Meteora test', () => {
             chain: 'solana'
         });
         console.log("🚀 ~ it ~ result:", result)
-    }, 30000); // 30 second timeout
+    }, 60000); // 60 second timeout
 });

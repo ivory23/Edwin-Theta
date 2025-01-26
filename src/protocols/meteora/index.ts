@@ -1,7 +1,7 @@
 import { IDEXProtocol, SwapParams, LiquidityParams, Transaction, SupportedChain } from "../../types";
 import { EdwinSolanaWallet } from "../../edwin-core/providers/solana_wallet";
-import DLMM, { StrategyType, getTokenDecimals } from "@meteora-ag/dlmm";
-import { Keypair, PublicKey, sendAndConfirmTransaction } from "@solana/web3.js";
+import DLMM, { StrategyType } from "@meteora-ag/dlmm";
+import { Keypair, PublicKey, sendAndConfirmTransaction, SendTransactionError } from "@solana/web3.js";
 import BN from 'bn.js';
 
 interface MeteoraPoolResult {
@@ -124,6 +124,9 @@ export class MeteoraProtocol implements IDEXProtocol {
             return "amountX: " + totalXAmount.toString() + " amountY: \n" + totalYAmount.toString(), "TX Hash: " + createBalancePositionTxHash;
             // return createBalancePositionTxHash as `0x${string}`;
         } catch (error: unknown) {
+            if (error instanceof SendTransactionError) {
+                console.error("Transaction logs:", error.getLogs(walletProvider.getConnection()));
+            }
             console.error("Meteora add liquidity error:", error);
             const message = error instanceof Error ? error.message : String(error);
             throw new Error(`Meteora add liquidity failed: ${message}`);
