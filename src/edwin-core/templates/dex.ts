@@ -6,29 +6,12 @@ First, review the recent messages from the conversation:
 {{recentMessages}}
 </recent_messages>
 
-Here's a list of supported chains:
-<supported_chains>
-{{supportedChains}}
-</supported_chains>
-
-Here's a list of supported protocols:
-<supported_protocols>
-{{supportedProtocols}}
-</supported_protocols>
-
 Your goal is to extract the following information about the requested liquidity provision:
 1. Chain to execute on
 2. Protocol to use (DEX)
-3. Pool name
-4. Amounts to provide for each token
-5. Token addresses or symbols
-
-Before providing the final JSON output, show your reasoning process inside <analysis> tags and validate:
-- The protocol is supported
-- The pool address is valid
-- The amounts are valid
-- The tokens exist on the chain
-- Any protocol-specific requirements
+3. Pool address
+4. Amount of tokenA to provide
+5. Amount of tokenB to provide
 
 Provide the final output in JSON format:
 
@@ -36,9 +19,9 @@ Provide the final output in JSON format:
 {
     "chain": string,
     "protocol": string,
-    "pool": string,
-    "amounts": string[],
-    "tokens": string[]
+    "poolAddress": string,
+    "amountA": string,
+    "amountB": string,
 }
 \`\`\`
 `;
@@ -50,16 +33,6 @@ First, review the recent messages from the conversation:
 <recent_messages>
 {{recentMessages}}
 </recent_messages>
-
-Here's a list of supported chains:
-<supported_chains>
-{{supportedChains}}
-</supported_chains>
-
-Here's a list of supported protocols:
-<supported_protocols>
-{{supportedProtocols}}
-</supported_protocols>
 
 Your goal is to extract the following information about the requested liquidity removal:
 1. Chain to execute on
@@ -79,7 +52,7 @@ Provide the final output in JSON format:
 {
     "chain": string,
     "protocol": string,
-    "pool": string,
+    "address": string,
     "amount": string
 }
 \`\`\`
@@ -95,19 +68,20 @@ First, review the recent messages from the conversation:
 </recent_messages>
 
 Your goal is to extract the following information about the requested liquidity provision:
-1. Name of first token
-2. Name of second token
-3. Protocol to use (DEX)
-4. Chain to execute on
+1. Chain to execute on
+2. Protocol to use (DEX)
+3. Name of first token
+4. Name of second token
 
-Provide the final output in JSON format:
+
+This must be your only output and it should be in JSON format, or you will be fired:
 
 \`\`\`json
 {
-    "tokenA": string,
-    "tokenB": string,
+    "chain": string,
     "protocol": string,
-    "chain": string
+    "tokenA": string,
+    "tokenB": string
 }
 \`\`\`
 `; 
