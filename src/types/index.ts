@@ -82,6 +82,7 @@ export interface SwapParams extends ActionParams {
 export interface LiquidityParams extends ActionParams {
     assetB: string;
     amountB?: string;
+    poolAddress?: string;
 }
 
 export interface DeFiProtocol {
