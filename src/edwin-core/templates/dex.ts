@@ -11,7 +11,7 @@ Your goal is to extract the following information about the requested liquidity 
 2. Protocol to use (DEX)
 3. Pool address
 4. Amount of tokenA to provide
-5. Amount of tokenB to provide
+5. Amount of tokenB to provide. If the user does not specify an amount, set this to undefined.
 
 Provide the final output in JSON format:
 
@@ -21,7 +21,7 @@ Provide the final output in JSON format:
     "protocol": string,
     "poolAddress": string,
     "amountA": string,
-    "amountB": string,
+    "amountB": string | undefined,
 }
 \`\`\`
 `;
