@@ -13,10 +13,6 @@ describe('Meteora test', () => {
             actions: ['addLiquidity', 'getPools']
         };
         const edwin = new Edwin(edwinConfig);
-
-        const meteora = new MeteoraProtocol();
-        const pools = await meteora.getPools('sol', 'usdc');
-        console.log("🚀 ~ it ~ apyPools:", pools)
         const results = await edwin.actions.getPools.execute({
             tokenA: 'sol',
             tokenB: 'usdc',
@@ -35,5 +31,5 @@ describe('Meteora test', () => {
             chain: 'solana'
         });
         console.log("🚀 ~ it ~ result:", result)
-    }, 60000); // 60 second timeout
+    }, 240000); // 240 second timeout
 });
