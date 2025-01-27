@@ -24,7 +24,7 @@ describe('Meteora test', () => {
             poolAddress: topPoolAddress,
             asset: 'sol',
             assetB: 'usdc',
-            amount: '0.001',
+            amount: 'auto',
             amountB: '1',
             protocol: 'meteora',
             chain: 'solana'

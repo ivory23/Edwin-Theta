@@ -64,6 +64,43 @@ export class MeteoraProtocol implements IDEXProtocol {
         return result.pairs;
     }
 
+    private async calculateAmounts(amount: string, amountB: string, activeBinPricePerToken: string, dlmmPool: DLMM): Promise<[BN, BN]> {
+        let totalXAmount;
+        let totalYAmount;
+
+        if (amount === "auto" && amountB === "auto") {
+            throw new Error("Amount for both first asset and second asset cannot be 'auto' for Meteora liquidity provision");
+        } else if (!amount || !amountB) {
+            throw new Error("Both amounts must be specified for Meteora liquidity provision");
+        }
+
+        if (amount === "auto") {
+            // Calculate amount based on amountB
+            if (!isNaN(Number(amountB))) {
+                totalXAmount = new BN (Number(amountB) / Number(activeBinPricePerToken) * 10 ** (dlmmPool.tokenX.decimal));
+                totalYAmount = new BN(Number(amountB) * 10 ** dlmmPool.tokenY.decimal);
+            } else {
+                throw new Error("Invalid amountB value for second token for Meteora liquidity provision");
+            }
+        } else if (amountB === "auto") {
+            // Calculate amountB based on amount
+            if (!isNaN(Number(amount))) {
+                totalXAmount = new BN(Number(amount) * 10 ** dlmmPool.tokenX.decimal);
+                totalYAmount = new BN(Number(amount) * Number(activeBinPricePerToken) * 10 ** (dlmmPool.tokenY.decimal));
+            } else {
+                throw new Error("Invalid amount value for first token for Meteora liquidity provision");
+            }
+        } else {
+            // Both are numbers
+            if (!isNaN(Number(amount)) && !isNaN(Number(amountB))) {
+                totalXAmount = new BN(Number(amount) * 10 ** dlmmPool.tokenX.decimal);
+                totalYAmount = new BN(Number(amountB) * 10 ** dlmmPool.tokenY.decimal);
+            } else {
+                throw new Error("Both amounts must be numbers or 'auto' for Meteora liquidity provision");
+            }
+        }
+        return [totalXAmount, totalYAmount];
+    }
     async addLiquidity(params: LiquidityParams, walletProvider: EdwinSolanaWallet): Promise<string> {
         const { chain, amount,amountB, poolAddress } = params;
         console.log(`Calling Meteora protocol to add liquidity to pool ${poolAddress} with ${amount} and ${amountB}`);
@@ -92,13 +129,7 @@ export class MeteoraProtocol implements IDEXProtocol {
             console.log("🚀 ~ addLiquidity ~ activeBinPricePerToken:", activeBinPricePerToken)
             console.log(activeBin.price);
 
-            const totalXAmount = new BN(Number(amount) * 10 ** dlmmPool.tokenX.decimal);
-            let totalYAmount;
-            if (amountB) {
-                totalYAmount = new BN(Number(amountB) * 10 ** dlmmPool.tokenY.decimal);
-            } else {
-                totalYAmount = totalXAmount.mul(new BN(Number(activeBinPricePerToken))).mul(new BN(10 ** (dlmmPool.tokenY.decimal - dlmmPool.tokenX.decimal)));
-            }
+            const [totalXAmount, totalYAmount] = await this.calculateAmounts(amount, amountB, activeBinPricePerToken, dlmmPool);
 
             const newBalancePosition = Keypair.generate();
             console.log("totalXAmount", totalXAmount.toString());
