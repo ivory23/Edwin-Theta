@@ -103,7 +103,7 @@ export class MeteoraProtocol implements IDEXProtocol {
             const newBalancePosition = Keypair.generate();
             console.log("totalXAmount", totalXAmount.toString());
             console.log("totalYAmount", totalYAmount.toString());
-
+            // Future features: support increasing liquidity for existing positions
             const createPositionTx = await dlmmPool.initializePositionAndAddLiquidityByStrategy({
                 positionPubKey: newBalancePosition.publicKey,
                 user: walletProvider.getPublicKey(),
@@ -116,10 +116,8 @@ export class MeteoraProtocol implements IDEXProtocol {
                 },
             });
 
-
             // Add compute units to transaction after creation
             createPositionTx.instructions[0] =  ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 90000 });
-            // createPositionTx.instructions[1] =
 
             const createBalancePositionTxHash = await sendAndConfirmTransaction(
                 connection,
@@ -146,8 +144,9 @@ export class MeteoraProtocol implements IDEXProtocol {
             if (chain !== "solana") {
                 throw new Error("Meteora protocol only supports Solana");
             }
-
-            // TODO: Implement Meteora remove liquidity logic
+            // Future features:
+            // support removing liquidity for existing positions
+            // support closing positions
             throw new Error("Meteora remove liquidity not implemented");
         } catch (error: unknown) {
             console.error("Meteora remove liquidity error:", error);
