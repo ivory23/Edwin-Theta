@@ -105,7 +105,7 @@ export interface IDEXProtocol extends DeFiProtocol {
     addLiquidity(params: LiquidityParams, walletProvider: EdwinWallet): Promise<string>;
     removeLiquidity(params: LiquidityParams, walletProvider: EdwinWallet): Promise<Transaction>;
     getQuote?(params: SwapParams, walletProvider: EdwinWallet): Promise<string>;
-    getPools?(tokenA: string, tokenB: string, limit?: number): Promise<any>;
+    getPools?(params: LiquidityParams, limit?: number): Promise<any>;
 }
 
 export interface EdwinAction {
@@ -113,5 +113,5 @@ export interface EdwinAction {
     description: string;
     template: string;
     provider: EdwinProvider;
-    execute: (params: ActionParams) => Promise<any>;
+    execute: (params: any) => Promise<any>;
 }

@@ -3,7 +3,6 @@ config(); // Load test environment variables from .env file
 
 import { describe, it } from 'vitest';
 import { Edwin, EdwinConfig } from '../src';
-import { MeteoraProtocol } from '../src/protocols/meteora';
 
 // Meteora test
 describe('Meteora test', () => {
@@ -14,8 +13,8 @@ describe('Meteora test', () => {
         };
         const edwin = new Edwin(edwinConfig);
         const results = await edwin.actions.getPools.execute({
-            tokenA: 'sol',
-            tokenB: 'usdc',
+            asset: 'sol',
+            assetB: 'usdc',
             protocol: 'meteora'
         });
         console.log("🚀 ~ it ~ result:", results)
@@ -25,8 +24,8 @@ describe('Meteora test', () => {
             poolAddress: topPoolAddress,
             asset: 'sol',
             assetB: 'usdc',
-            amount: 0.001,
-            amountB: 1,
+            amount: '0.001',
+            amountB: '1',
             protocol: 'meteora',
             chain: 'solana'
         });

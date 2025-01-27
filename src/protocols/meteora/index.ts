@@ -51,25 +51,25 @@ export class MeteoraProtocol implements IDEXProtocol {
         }
     }
 
-    async getPools(tokenA: string, tokenB: string, limit: number = 10): Promise<MeteoraPool[]> {
-        const response = await fetch(`https://dlmm-api.meteora.ag/pair/all_with_pagination?search_term=${tokenA}-${tokenB}&limit=${limit}`);
+    async getPools(params: LiquidityParams, limit: number = 10): Promise<MeteoraPool[]> {
+        const { asset, assetB } = params;
+        if (!asset || !assetB) {
+            throw new Error("Asset A and Asset B are required for Meteora getPools");
+        }
+        const response = await fetch(`https://dlmm-api.meteora.ag/pair/all_with_pagination?search_term=${asset}-${assetB}&limit=${limit}`);
         const result: MeteoraPoolResult = await response.json();
         if (!result.pairs) {
-            throw new Error(`No pool found for ${tokenA}-${tokenB}`);
+            throw new Error(`No pool found for ${asset}-${assetB}`);
         }
         return result.pairs;
     }
 
     async addLiquidity(params: LiquidityParams, walletProvider: EdwinSolanaWallet): Promise<string> {
-        const { chain, asset, amount, assetB, amountB, poolAddress } = params;
-        console.log(`Calling Meteora protocol to add liquidity ${amount} ${asset} and ${amountB} ${assetB}`);
+        const { chain, amount,amountB, poolAddress } = params;
+        console.log(`Calling Meteora protocol to add liquidity to pool ${poolAddress} with ${amount} and ${amountB}`);
 
         try {
-            if (!asset) {
-                throw new Error("Asset A is required for Meteora liquidity provision");
-            } else if (!assetB) {
-                throw new Error("Asset B is required for Meteora liquidity provision"); 
-            } else if (!amount) {
+            if (!amount) {
                 throw new Error("Amount for Asset A is required for Meteora liquidity provision");
             } else if (!amountB) {
                 throw new Error("Amount for Asset B is required for Meteora liquidity provision");
@@ -117,7 +117,7 @@ export class MeteoraProtocol implements IDEXProtocol {
             });
 
             // Add compute units to transaction after creation
-            createPositionTx.instructions[0] =  ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 90000 });
+            createPositionTx.instructions[0] =  ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 200000 });
 
             const createBalancePositionTxHash = await sendAndConfirmTransaction(
                 connection,

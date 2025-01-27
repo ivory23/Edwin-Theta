@@ -86,6 +86,6 @@ export class GetPoolsAction implements EdwinAction {
         if (!protocol.getPools) {
             throw new Error(`Protocol ${params.protocol} does not support getPools`);
         }
-        return await protocol.getPools(params.tokenA, params.tokenB);
+        return await protocol.getPools(params);
     }
 }
