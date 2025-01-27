@@ -20,7 +20,7 @@ Provide the final output in JSON format:
     "chain": string,
     "protocol": string,
     "poolAddress": string,
-    "amountA": string,
+    "amount": string,
     "amountB": string,
 }
 \`\`\`
