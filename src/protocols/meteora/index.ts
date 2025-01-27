@@ -1,7 +1,8 @@
 import { IDEXProtocol, SwapParams, LiquidityParams, Transaction, SupportedChain } from "../../types";
 import { EdwinSolanaWallet } from "../../edwin-core/providers/solana_wallet";
 import DLMM, { StrategyType } from "@meteora-ag/dlmm";
-import { Keypair, PublicKey, sendAndConfirmTransaction, SendTransactionError, ComputeBudgetProgram, VersionedTransaction } from "@solana/web3.js";
+import { Keypair, PublicKey, sendAndConfirmTransaction, SendTransactionError, ComputeBudgetProgram, VersionedTransaction, TransactionMessage, Connection } from "@solana/web3.js";
+import { Transaction as SolanaTransaction } from "@solana/web3.js";
 import BN from 'bn.js';
 
 interface MeteoraPoolResult {
@@ -39,6 +40,34 @@ interface MeteoraPool {
 
 export class MeteoraProtocol implements IDEXProtocol {
     public supportedChains: SupportedChain[] = ["solana"];
+
+    // Function to gracefully wait for transaction confirmation
+    async waitForConfirmationGracefully(
+        connection: Connection,
+        signature: string,
+        timeout: number = 120000 // Timeout in milliseconds
+    ) {
+        const startTime = Date.now();
+        let status = null;
+    
+        while (Date.now() - startTime < timeout) {
+            // Fetch the status of the transaction
+            const { value } = await connection.getSignatureStatus(signature, {
+                searchTransactionHistory: true,
+            });
+            console.log("🚀 ~ waitForConfirmationGracefully ~ value:", value)
+            if (value) {
+                if (value.confirmationStatus === "confirmed" || value.confirmationStatus === "finalized") {
+                    return value; // Transaction is confirmed or finalized
+                }
+            }
+        
+            // Wait for a short interval before retrying
+            await new Promise((resolve) => setTimeout(resolve, 2000));
+        }
+    
+        throw new Error("Transaction confirmation timed out");
+    }
 
     async swap(params: SwapParams, walletProvider: EdwinSolanaWallet): Promise<Transaction> {
         try {
@@ -134,6 +163,7 @@ export class MeteoraProtocol implements IDEXProtocol {
             const newBalancePosition = Keypair.generate();
             console.log("totalXAmount", totalXAmount.toString());
             console.log("totalYAmount", totalYAmount.toString());
+            console.log("Building transaction");
             // Future features: support increasing liquidity for existing positions
             const createPositionTx = await dlmmPool.initializePositionAndAddLiquidityByStrategy({
                 positionPubKey: newBalancePosition.publicKey,
@@ -147,23 +177,65 @@ export class MeteoraProtocol implements IDEXProtocol {
                 },
             });
 
-            // Add compute units to transaction after creation
-            createPositionTx.instructions[0] =  ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 200000 });
+            const t = new SolanaTransaction();
 
-            const createBalancePositionTxHash = await sendAndConfirmTransaction(
-                connection,
-                createPositionTx,
-                [walletProvider.getSigner(), newBalancePosition]
+            const updatedInstructions = createPositionTx.instructions.filter(
+                (ix) =>
+                  ix.programId.toBase58() !== ComputeBudgetProgram.programId.toBase58()
               );
-            return "amountX: " + totalXAmount.toString() + " amountY: \n" + totalYAmount.toString(), "TX Hash: " + createBalancePositionTxHash;
-            // return createBalancePositionTxHash as `0x${string}`;
+            const removedInstructions = createPositionTx.instructions.filter(
+            (ix) =>
+                ix.programId.toBase58() === ComputeBudgetProgram.programId.toBase58()
+            );
+            console.log("🚀 ~ addLiquidity ~ removedInstructions:", removedInstructions);
+
+            updatedInstructions.unshift(
+                ComputeBudgetProgram.setComputeUnitLimit({
+                    units: 1_000_000
+                }),
+                ComputeBudgetProgram.setComputeUnitPrice({
+                    microLamports: 100000
+                }),
+            );  
+            t.add(...updatedInstructions);
+            t.feePayer = walletProvider.getPublicKey();
+            const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
+            if (!blockhash) {
+                throw new Error("Failed to get latest blockhash");
+            }
+            console.log("🚀 ~ addLiquidity ~ blockhash:", blockhash)
+            t.recentBlockhash = blockhash;
+            t.sign(walletProvider.getSigner());
+
+            // Convert to VersionedTransaction
+            const messageV0 = t.compileMessage();
+            const versionedTx = new VersionedTransaction(messageV0);
+            
+            // Sign the transaction
+            versionedTx.sign([walletProvider.getSigner(), newBalancePosition]);
+
+            console.log("🚀 ~ addLiquidity ~ Sending TX");
+            const signature = await connection.sendTransaction(versionedTx, {
+                skipPreflight: false,
+                maxRetries: 3,
+                preflightCommitment: 'confirmed'
+            });
+
+            // Wait for confirmation
+            const confirmation = await this.waitForConfirmationGracefully(connection, signature);
+ 
+            if (confirmation.err) {
+                throw new Error(`Transaction failed: ${confirmation.err.toString()}`);
+            }
+
+            return signature;
         } catch (error: unknown) {
             if (error instanceof SendTransactionError) {
-                console.error("Transaction logs:", error.getLogs(walletProvider.getConnection()));
+                const logs = await error.getLogs(walletProvider.getConnection());
+                console.error("Transaction failed with logs:", logs);
+                throw new Error(`Transaction failed: ${error.message}\nLogs: ${logs?.join('\n')}`);
             }
-            console.error("Meteora add liquidity error:", error);
-            const message = error instanceof Error ? error.message : String(error);
-            throw new Error(`Meteora add liquidity failed: ${message}`);
+            throw error;
         }
     }
 

@@ -22,10 +22,8 @@ describe('Meteora test', () => {
 
         const result = await edwin.actions.addLiquidity.execute({
             poolAddress: topPoolAddress,
-            asset: 'sol',
-            assetB: 'usdc',
             amount: 'auto',
-            amountB: '1',
+            amountB: '2',
             protocol: 'meteora',
             chain: 'solana'
         });
