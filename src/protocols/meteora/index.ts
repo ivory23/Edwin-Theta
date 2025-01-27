@@ -1,7 +1,7 @@
 import { IDEXProtocol, SwapParams, LiquidityParams, Transaction, SupportedChain } from "../../types";
 import { EdwinSolanaWallet } from "../../edwin-core/providers/solana_wallet";
 import DLMM, { StrategyType } from "@meteora-ag/dlmm";
-import { Keypair, PublicKey, sendAndConfirmTransaction, SendTransactionError} from "@solana/web3.js";
+import { Keypair, PublicKey, sendAndConfirmTransaction, SendTransactionError, ComputeBudgetProgram, VersionedTransaction } from "@solana/web3.js";
 import BN from 'bn.js';
 
 interface MeteoraPoolResult {
@@ -116,13 +116,10 @@ export class MeteoraProtocol implements IDEXProtocol {
                 },
             });
 
-            // const signature = await connection.sendTransaction(createPositionTx, [walletProvider.getSigner(), newBalancePosition]);
-            // console.log("🚀 ~ addLiquidity ~ signature:", signature)
-            // await connection.confirmTransaction({
-            //     signature: signature,
-            //     blockhash: createPositionTx.recentBlockhash,
-            //     lastValidBlockHeight: createPositionTx.lastValidBlockHeight,
-            // }, "confirmed");
+
+            // Add compute units to transaction after creation
+            createPositionTx.instructions[0] =  ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 90000 });
+            // createPositionTx.instructions[1] =
 
             const createBalancePositionTxHash = await sendAndConfirmTransaction(
                 connection,
