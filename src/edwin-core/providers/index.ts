@@ -22,7 +22,7 @@ export class EdwinProvider {
         if (evmChainNames.includes(chain.toLowerCase())) {
             return this.wallets['evm'];
         }
-        else if (chain === 'solana') {
+        else if (chain.toLowerCase() === 'solana') {
             return this.wallets['solana'];
         }
         throw new Error(`No matching wallet is loaded in Edwin to support chain: ${chain}`);
