@@ -10,8 +10,8 @@ Your goal is to extract the following information about the requested liquidity 
 1. Chain to execute on
 2. Protocol to use (DEX)
 3. Pool address
-4. Amount of tokenA to provide
-5. Amount of tokenB to provide. If the user does not specify an amount, set this to undefined.
+4. Amount of first token to provide
+5. Amount of second token to provide. If the user does not specify an amount, set this to 'auto', then Edwin will calculate the amount of second token to provide.
 
 Provide the final output in JSON format:
 
@@ -21,7 +21,7 @@ Provide the final output in JSON format:
     "protocol": string,
     "poolAddress": string,
     "amountA": string,
-    "amountB": string | undefined,
+    "amountB": string,
 }
 \`\`\`
 `;
