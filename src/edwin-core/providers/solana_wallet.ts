@@ -82,8 +82,8 @@ export class EdwinSolanaWallet extends EdwinWallet {
             (ix) => ix.programId.toBase58() !== ComputeBudgetProgram.programId.toBase58()
           );
         updatedInstructions.unshift(
-            ComputeBudgetProgram.setComputeUnitLimit({units: 1_000_000}),
-            ComputeBudgetProgram.setComputeUnitPrice({microLamports: 100000}),
+            ComputeBudgetProgram.setComputeUnitLimit({units: 2_000_000}),
+            ComputeBudgetProgram.setComputeUnitPrice({microLamports: 200000}),
         );  
         newTransaction.add(...updatedInstructions);
         newTransaction.feePayer = this.wallet_address;
