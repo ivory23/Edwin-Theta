@@ -1,8 +1,7 @@
 import { IDEXProtocol, SwapParams, LiquidityParams, Transaction, SupportedChain } from "../../types";
 import { EdwinSolanaWallet } from "../../edwin-core/providers/solana_wallet";
 import DLMM, { StrategyType } from "@meteora-ag/dlmm";
-import { Keypair, PublicKey, sendAndConfirmTransaction, SendTransactionError, ComputeBudgetProgram, VersionedTransaction, TransactionMessage, Connection } from "@solana/web3.js";
-import { Transaction as SolanaTransaction } from "@solana/web3.js";
+import { Keypair, PublicKey, SendTransactionError } from "@solana/web3.js";
 import BN from 'bn.js';
 
 interface MeteoraPoolResult {
@@ -40,34 +39,6 @@ interface MeteoraPool {
 
 export class MeteoraProtocol implements IDEXProtocol {
     public supportedChains: SupportedChain[] = ["solana"];
-
-    // Function to gracefully wait for transaction confirmation
-    async waitForConfirmationGracefully(
-        connection: Connection,
-        signature: string,
-        timeout: number = 120000 // Timeout in milliseconds
-    ) {
-        const startTime = Date.now();
-        let status = null;
-    
-        while (Date.now() - startTime < timeout) {
-            // Fetch the status of the transaction
-            const { value } = await connection.getSignatureStatus(signature, {
-                searchTransactionHistory: true,
-            });
-            console.log("🚀 ~ waitForConfirmationGracefully ~ value:", value)
-            if (value) {
-                if (value.confirmationStatus === "confirmed" || value.confirmationStatus === "finalized") {
-                    return value; // Transaction is confirmed or finalized
-                }
-            }
-        
-            // Wait for a short interval before retrying
-            await new Promise((resolve) => setTimeout(resolve, 2000));
-        }
-    
-        throw new Error("Transaction confirmation timed out");
-    }
 
     async swap(params: SwapParams, walletProvider: EdwinSolanaWallet): Promise<Transaction> {
         try {
@@ -177,53 +148,13 @@ export class MeteoraProtocol implements IDEXProtocol {
                 },
             });
 
-            const t = new SolanaTransaction();
-
-            const updatedInstructions = createPositionTx.instructions.filter(
-                (ix) =>
-                  ix.programId.toBase58() !== ComputeBudgetProgram.programId.toBase58()
-              );
-            const removedInstructions = createPositionTx.instructions.filter(
-            (ix) =>
-                ix.programId.toBase58() === ComputeBudgetProgram.programId.toBase58()
-            );
-            console.log("🚀 ~ addLiquidity ~ removedInstructions:", removedInstructions);
-
-            updatedInstructions.unshift(
-                ComputeBudgetProgram.setComputeUnitLimit({
-                    units: 1_000_000
-                }),
-                ComputeBudgetProgram.setComputeUnitPrice({
-                    microLamports: 100000
-                }),
-            );  
-            t.add(...updatedInstructions);
-            t.feePayer = walletProvider.getPublicKey();
-            const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
-            if (!blockhash) {
-                throw new Error("Failed to get latest blockhash");
-            }
-            console.log("🚀 ~ addLiquidity ~ blockhash:", blockhash)
-            t.recentBlockhash = blockhash;
-            t.sign(walletProvider.getSigner());
-
-            // Convert to VersionedTransaction
-            const messageV0 = t.compileMessage();
-            const versionedTx = new VersionedTransaction(messageV0);
-            
-            // Sign the transaction
-            versionedTx.sign([walletProvider.getSigner(), newBalancePosition]);
-
-            console.log("🚀 ~ addLiquidity ~ Sending TX");
-            const signature = await connection.sendTransaction(versionedTx, {
-                skipPreflight: false,
-                maxRetries: 3,
-                preflightCommitment: 'confirmed'
-            });
-
+            console.log("🚀 ~ addLiquidity ~ createPositionTx:", createPositionTx)
+            const prioritizedTx = await walletProvider.getIncreasedTransactionPriorityFee(connection, createPositionTx);
+            console.log("🚀 ~ addLiquidity ~ prioritizedTx:", prioritizedTx)
+            const signature = await walletProvider.sendTransaction(connection, prioritizedTx, [walletProvider.getSigner(), newBalancePosition]);
             // Wait for confirmation
-            const confirmation = await this.waitForConfirmationGracefully(connection, signature);
- 
+            const confirmation = await walletProvider.waitForConfirmationGracefully(connection, signature);
+            console.log("🚀 ~ addLiquidity ~ confirmation:", confirmation)
             if (confirmation.err) {
                 throw new Error(`Transaction failed: ${confirmation.err.toString()}`);
             }
