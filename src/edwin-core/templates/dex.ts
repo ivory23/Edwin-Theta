@@ -85,3 +85,29 @@ This must be your only output and it should be in JSON format, or you will be fi
 }
 \`\`\`
 `; 
+
+export const getPositionsTemplate = `You are an AI assistant specialized in processing DeFi liquidity removal requests. Your task is to extract specific information from user messages and format it into a structured JSON response.
+
+First, review the recent messages from the conversation:
+
+<recent_messages>
+{{recentMessages}}
+</recent_messages>
+
+Your goal is to extract the following information about the requested liquidity provision:
+1. Chain to execute on
+2. Protocol to use (DEX)
+3. Name of first asset
+4. Name of second asset
+
+This must be your only output and it should be in JSON format, or you will be fired:
+
+\`\`\`json
+{
+    "chain": string,
+    "protocol": string,
+    "asset": string,
+    "assetB": string
+}
+\`\`\`
+`;

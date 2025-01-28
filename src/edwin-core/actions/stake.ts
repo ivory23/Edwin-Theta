@@ -3,7 +3,7 @@ import { EdwinProvider } from "../providers";
 import { stakeTemplate } from "../templates";
 
 export class StakeAction implements EdwinAction {
-    public name = 'stake';
+    public name = 'STAKE';
     public description = 'Stake assets to a staking protocol';
     public template = stakeTemplate;
     public provider: EdwinProvider;

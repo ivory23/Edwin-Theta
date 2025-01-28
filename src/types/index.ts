@@ -70,14 +70,6 @@ export interface SupplyParams extends ActionParams {}
 export interface WithdrawParams extends ActionParams {}
 
 export interface StakeParams extends ActionParams {}
-export interface SwapParams extends ActionParams {
-    contract: string;
-    tokenIn: string;
-    tokenOut: string;
-    amountOut?: string;
-    slippage: number;
-    recipient?: string;
-}
 
 export interface LiquidityParams extends ActionParams {
     assetB: string;
@@ -95,17 +87,17 @@ export interface ILendingProtocol extends DeFiProtocol {
 }
 
 export interface IStakingProtocol extends DeFiProtocol {
-    stake(params: StakeParams, walletProvider: EdwinWallet): Promise<Transaction>;
-    unstake(params: StakeParams, walletProvider: EdwinWallet): Promise<Transaction>;
-    claimRewards?(params: StakeParams, walletProvider: EdwinWallet): Promise<Transaction>;
+    stake(params: StakeParams, walletProvider: EdwinWallet): Promise<string>;
+    unstake(params: StakeParams, walletProvider: EdwinWallet): Promise<string>;
+    claimRewards?(params: StakeParams, walletProvider: EdwinWallet): Promise<string>;
 }
 
 export interface IDEXProtocol extends DeFiProtocol {
-    swap(params: SwapParams, walletProvider: EdwinWallet): Promise<Transaction>;
+    swap(params: LiquidityParams, walletProvider: EdwinWallet): Promise<string>;
     addLiquidity(params: LiquidityParams, walletProvider: EdwinWallet): Promise<string>;
-    removeLiquidity(params: LiquidityParams, walletProvider: EdwinWallet): Promise<Transaction>;
-    getQuote?(params: SwapParams, walletProvider: EdwinWallet): Promise<string>;
+    removeLiquidity(params: LiquidityParams, walletProvider: EdwinWallet): Promise<string>;
     getPools?(params: LiquidityParams, limit?: number): Promise<any>;
+    getPositions?(params: LiquidityParams, walletProvider: EdwinWallet): Promise<any>;
 }
 
 export interface EdwinAction {
@@ -114,4 +106,5 @@ export interface EdwinAction {
     template: string;
     provider: EdwinProvider;
     execute: (params: any) => Promise<any>;
+    // Future feature: pass input schema to params to enforce correct input
 }

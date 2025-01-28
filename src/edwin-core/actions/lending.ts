@@ -4,7 +4,7 @@ import { EdwinWallet } from "../providers";
 import { supplyTemplate, withdrawTemplate } from "../templates";
 
 export class SupplyAction implements EdwinAction {
-    public name = 'supply';
+    public name = 'SUPPLY';
     public description = 'Supply assets to a lending protocol';
     public template = supplyTemplate;
     public provider: EdwinProvider;
