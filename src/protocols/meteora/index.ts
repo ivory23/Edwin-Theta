@@ -1,7 +1,7 @@
 import { IDEXProtocol, LiquidityParams, SupportedChain } from "../../types";
 import { EdwinSolanaWallet } from "../../edwin-core/providers/solana_wallet";
 import DLMM, { StrategyType } from "@meteora-ag/dlmm";
-import { Keypair, PublicKey, SendTransactionError } from "@solana/web3.js";
+import { Keypair, PublicKey, sendAndConfirmTransaction, SendTransactionError } from "@solana/web3.js";
 import { BN } from "@coral-xyz/anchor";
 
 interface MeteoraPoolResult {
@@ -235,7 +235,7 @@ export class MeteoraProtocol implements IDEXProtocol {
                 throw new Error(`Transaction failed: ${confirmation.err.toString()}`);
             }
 
-            return signature;
+            return "Successfully added liquidity to pool " + poolAddress + ", transaction signature: " + signature;
         } catch (error: unknown) {
             if (error instanceof SendTransactionError) {
                 const logs = await error.getLogs(walletProvider.getConnection());
@@ -264,7 +264,9 @@ export class MeteoraProtocol implements IDEXProtocol {
             if (!userPositions || userPositions.length === 0) {
                 throw new Error("No positions found in this pool");
             }
-
+            if (userPositions.length > 1) {
+                throw new Error("More than one position found in this pool. Please manually remove the liquidity.");
+            }
             // Get all bin IDs where user has liquidity
             const binIdsToRemove = userPositions[0].positionData.positionBinData.map(bin => bin.binId);
             
@@ -278,42 +280,20 @@ export class MeteoraProtocol implements IDEXProtocol {
             });
 
             // Handle multiple transactions if needed
-            if (Array.isArray(removeLiquidityTx)) {
-                for (const tx of removeLiquidityTx) {
-                    const prioritizedTx = await walletProvider.getIncreasedTransactionPriorityFee(connection, tx);
-                    const signature = await walletProvider.sendTransaction(connection, prioritizedTx, [walletProvider.getSigner()]);
-                    await walletProvider.waitForConfirmationGracefully(connection, signature);
-                }
-                return "Multiple transactions completed";
-            } else {
-                const newBalancePosition = Keypair.generate();
-                const prioritizedTx = await walletProvider.getIncreasedTransactionPriorityFee(connection, removeLiquidityTx);
-                const signature = await walletProvider.sendTransaction(
-                    connection, 
-                    prioritizedTx, 
-                    [walletProvider.getSigner(), newBalancePosition]
-                );
+            let signature;
+            for (let tx of Array.isArray(removeLiquidityTx)
+                ? removeLiquidityTx
+                : [removeLiquidityTx]) {
+                const prioritizedTx = await walletProvider.getIncreasedTransactionPriorityFee(connection, tx);
+                const signature = await walletProvider.sendTransaction(connection, prioritizedTx, [walletProvider.getSigner()]);
                 await walletProvider.waitForConfirmationGracefully(connection, signature);
-                return signature;
             }
+
+            return "Successfully removed liquidity from pool " + poolAddress + ", transaction signature: " + signature;
         } catch (error: unknown) {
             console.error("Meteora remove liquidity error:", error);
             const message = error instanceof Error ? error.message : String(error);
             throw new Error(`Meteora remove liquidity failed: ${message}`);
-        }
-    }
-
-    async getQuote(params: SwapParams, walletProvider: EdwinSolanaWallet): Promise<string> {
-        const { chain, amount, tokenIn, tokenOut } = params;
-        console.log(`Getting Meteora quote for ${amount} ${tokenIn} to ${tokenOut}`);
-
-        try {
-            // TODO: Implement Meteora quote logic
-            throw new Error("Meteora quote not implemented");
-        } catch (error: unknown) {
-            console.error("Meteora quote error:", error);
-            const message = error instanceof Error ? error.message : String(error);
-            throw new Error(`Meteora quote failed: ${message}`);
         }
     }
 }

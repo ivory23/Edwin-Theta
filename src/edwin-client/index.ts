@@ -6,7 +6,8 @@ import {
   StakeAction,
   AddLiquidityAction,
   GetPoolsAction,
-  GetPositionsAction 
+  GetPositionsAction,
+  RemoveLiquidityAction
 } from '../edwin-core/actions';
 
 
@@ -16,7 +17,8 @@ const ACTION_MAP: Record<string, new (provider: EdwinProvider) => EdwinAction> =
   'stake': StakeAction,
   'addLiquidity': AddLiquidityAction,
   'getPools': GetPoolsAction,
-  'getPositions': GetPositionsAction
+  'getPositions': GetPositionsAction, 
+  'removeLiquidity': RemoveLiquidityAction
 };
 
 type SupportedActions = keyof typeof ACTION_MAP;
