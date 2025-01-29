@@ -32,6 +32,33 @@ export class EdwinSolanaWallet extends EdwinWallet {
         return this.wallet;
     }
 
+    async getPriorityFee(transaction: Transaction) {
+        const serializedTransaction = bs58.encode(transaction.serialize({ requireAllSignatures: false }));
+        const heliusApiKey = process.env.HELIUS_API_KEY;
+        if (!heliusApiKey) {
+            throw new Error("HELIUS_API_KEY is not set");
+        }
+        const heliusApiUrl = `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`;
+        const response = await fetch(heliusApiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                "jsonrpc": "2.0",
+                "id": 1,
+                "method": "getPriorityFeeEstimate",
+                "params": [{
+                    "transaction": serializedTransaction,
+                    "options": {
+                        "recommended": true
+                    }
+                }]
+            })
+        });
+        const data = await response.json();
+        console.log("🚀 ~ getPriorityFee ~ data:", data)
+        return data.result.priorityFeeEstimate;
+    }
+
     // Function to gracefully wait for transaction confirmation
     async waitForConfirmationGracefully(
         connection: Connection,
@@ -77,23 +104,36 @@ export class EdwinSolanaWallet extends EdwinWallet {
     }
 
     async getIncreasedTransactionPriorityFee(connection: Connection, transaction: Transaction): Promise<Transaction> {
-        const newTransaction = new Transaction();
+        // Create a new transaction and filter out any existing compute budget instructions
         const updatedInstructions = transaction.instructions.filter(
             (ix) => ix.programId.toBase58() !== ComputeBudgetProgram.programId.toBase58()
-          );
-        updatedInstructions.unshift(
-            ComputeBudgetProgram.setComputeUnitLimit({units: 2_000_000}),
-            ComputeBudgetProgram.setComputeUnitPrice({microLamports: 200000}),
-        );  
-        newTransaction.add(...updatedInstructions);
-        newTransaction.feePayer = this.wallet_address;
-        const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
+        );
+
+        // Create a temporary transaction for priority fee estimation
+        const tempTransaction = new Transaction();
+        tempTransaction.add(...updatedInstructions);
+        tempTransaction.feePayer = this.wallet_address;
+        
+        const { blockhash } = await connection.getLatestBlockhash();
         if (!blockhash) {
             throw new Error("Failed to get latest blockhash");
         }
-        console.log("🚀 ~ addLiquidity ~ blockhash:", blockhash)
-        newTransaction.recentBlockhash = blockhash;
-        newTransaction.sign(this.wallet);
-        return newTransaction;
+        tempTransaction.recentBlockhash = blockhash;
+
+        // Get priority fee estimate
+        const priorityFee = await this.getPriorityFee(tempTransaction);
+
+        // Create final transaction with all instructions
+        const finalTransaction = new Transaction();
+        finalTransaction.add(
+            ComputeBudgetProgram.setComputeUnitLimit({ units: 2_000_000 }),
+            ComputeBudgetProgram.setComputeUnitPrice({ microLamports: priorityFee }),
+            ...updatedInstructions
+        );
+        
+        finalTransaction.feePayer = this.wallet_address;
+        finalTransaction.recentBlockhash = blockhash;
+
+        return finalTransaction;
     }
 }
