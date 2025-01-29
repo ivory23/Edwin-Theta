@@ -1,29 +1,25 @@
 import { EdwinAction } from "../../types";
-import { EdwinProvider } from "../providers";
 import { IDEXProtocol } from "../../types";
-import { getDEXProtocol } from "../../protocols";
 import { addLiquidityTemplate, removeLiquidityTemplate, getPoolsTemplate } from "../templates";
-import { getPositionsTemplate } from "../templates/dex";
+import { Edwin } from "../../edwin-client";
 
 
 export class SwapAction implements EdwinAction {
     name = "SWAP";
     description = "Swap tokens on a DEX";
     template = "swap {amount} {tokenIn} to {tokenOut} on {protocol}";
-    provider: EdwinProvider;
+    edwin: Edwin;
 
-    constructor(provider: EdwinProvider) {
-        this.provider = provider;
+    constructor(edwin: Edwin) {
+        this.edwin = edwin;
     }
 
     async execute(params: any): Promise<any> {
-        const protocol = getDEXProtocol(params.protocol) as IDEXProtocol;
+        const protocol = this.edwin.protocols[params.protocol] as IDEXProtocol;
         if (!protocol) {
             throw new Error(`Protocol ${params.protocol} not found`);
         }
-
-        const wallet = this.provider.getWallet(params.chain);
-        return await protocol.swap(params, wallet);
+        return await protocol.swap(params);
     }
 }
 
@@ -31,20 +27,18 @@ export class AddLiquidityAction implements EdwinAction {
     name = "ADD_LIQUIDITY";
     description = "Add liquidity to a DEX pool";
     template = addLiquidityTemplate;
-    provider: EdwinProvider;
+    edwin: Edwin;
 
-    constructor(provider: EdwinProvider) {
-        this.provider = provider;
+    constructor(edwin: Edwin) {
+        this.edwin = edwin;
     }
 
     async execute(params: any): Promise<any> {
-        const protocol = getDEXProtocol(params.protocol) as IDEXProtocol;
+        const protocol = this.edwin.protocols[params.protocol] as IDEXProtocol;
         if (!protocol) {
             throw new Error(`Protocol ${params.protocol} not found`);
         }
-
-        const wallet = this.provider.getWallet(params.chain);
-        return await protocol.addLiquidity(params, wallet);
+        return await protocol.addLiquidity(params);
     }
 }
 
@@ -52,20 +46,18 @@ export class RemoveLiquidityAction implements EdwinAction {
     name = "REMOVE_LIQUIDITY";
     description = "Remove liquidity from a DEX pool";
     template = removeLiquidityTemplate;
-    provider: EdwinProvider;
+    edwin: Edwin;
 
-    constructor(provider: EdwinProvider) {
-        this.provider = provider;
+    constructor(edwin: Edwin) {
+        this.edwin = edwin;
     }
 
     async execute(params: any): Promise<any> {
-        const protocol = getDEXProtocol(params.protocol) as IDEXProtocol;
+        const protocol = this.edwin.protocols[params.protocol] as IDEXProtocol;
         if (!protocol) {
             throw new Error(`Protocol ${params.protocol} not found`);
         }
-
-        const wallet = this.provider.getWallet(params.chain);
-        return await protocol.removeLiquidity(params, wallet);
+        return await protocol.removeLiquidity(params);
     }
 }
 
@@ -73,14 +65,14 @@ export class GetPoolsAction implements EdwinAction {
     name = "GET_POOLS";
     description = "Get pools from a DEX";
     template = getPoolsTemplate;
-    provider: EdwinProvider;
+    edwin: Edwin;
 
-    constructor(provider: EdwinProvider) {
-        this.provider = provider;
+    constructor(edwin: Edwin) {
+        this.edwin = edwin;
     }
 
     async execute(params: any): Promise<any> {
-        const protocol = getDEXProtocol(params.protocol) as IDEXProtocol;
+        const protocol = this.edwin.protocols[params.protocol] as IDEXProtocol;
         if (!protocol) {
             throw new Error(`Protocol ${params.protocol} not found`);
         }
@@ -91,25 +83,3 @@ export class GetPoolsAction implements EdwinAction {
     }
 }
 
-export class GetPositionsAction implements EdwinAction {
-    name = "GET_POSITIONS";
-    description = "Get existing positions from a DEX";
-    template = getPositionsTemplate;
-    provider: EdwinProvider;
-
-    constructor(provider: EdwinProvider) {
-        this.provider = provider;
-    }
-
-    async execute(params: any): Promise<any> {
-        const protocol = getDEXProtocol(params.protocol) as IDEXProtocol;
-        if (!protocol) {
-            throw new Error(`Protocol ${params.protocol} not found`);
-        }
-        if (!protocol.getPositions) {
-            throw new Error(`Protocol ${params.protocol} does not support getPositions`);
-        }
-        const wallet = this.provider.getWallet(params.chain);
-        return await protocol.getPositions(params, wallet);
-    }
-}

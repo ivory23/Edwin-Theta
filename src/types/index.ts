@@ -1,24 +1,11 @@
 import type { Token } from "@lifi/types";
 import type { Address, Chain, Hash } from "viem";
-import { EdwinWallet } from "../edwin-core/providers/wallet";
-import { EdwinProvider } from "../edwin-core/providers";
-import { _SupportedEVMChainList } from "../edwin-core/providers/evm_wallet";
-
-export type { EdwinWallet, EdwinProvider };
+import { _SupportedEVMChainList } from "../edwin-core/wallets/evm_wallet";
+import type { Edwin } from "../edwin-client";
 
 export type SupportedEVMChain = (typeof _SupportedEVMChainList)[number];
 
 export type SupportedChain = SupportedEVMChain | 'solana';
-
-// Transaction types
-export interface Transaction {
-    hash: Hash;
-    from: Address;
-    to: Address;
-    value: number;
-    data?: `0x${string}`;
-    chainId?: number;
-}
 
 // Token types
 export interface TokenWithBalance {
@@ -79,32 +66,33 @@ export interface LiquidityParams extends ActionParams {
 
 export interface DeFiProtocol {
     supportedChains: SupportedChain[];
+    getPortfolio(): Promise<string>;
 }
 
 export interface ILendingProtocol extends DeFiProtocol {
-    supply(params: SupplyParams, walletProvider: EdwinWallet): Promise<Transaction>;
-    withdraw(params: WithdrawParams, walletProvider: EdwinWallet): Promise<Transaction>;
+    supply(params: SupplyParams): Promise<string>;
+    withdraw(params: WithdrawParams): Promise<string>;
 }
 
 export interface IStakingProtocol extends DeFiProtocol {
-    stake(params: StakeParams, walletProvider: EdwinWallet): Promise<string>;
-    unstake(params: StakeParams, walletProvider: EdwinWallet): Promise<string>;
-    claimRewards?(params: StakeParams, walletProvider: EdwinWallet): Promise<string>;
+    stake(params: StakeParams): Promise<string>;
+    unstake(params: StakeParams): Promise<string>;
+    claimRewards?(params: StakeParams): Promise<string>;
 }
 
 export interface IDEXProtocol extends DeFiProtocol {
-    swap(params: LiquidityParams, walletProvider: EdwinWallet): Promise<string>;
-    addLiquidity(params: LiquidityParams, walletProvider: EdwinWallet): Promise<string>;
-    removeLiquidity(params: LiquidityParams, walletProvider: EdwinWallet): Promise<string>;
-    getPools?(params: LiquidityParams, limit?: number): Promise<any>;
-    getPositions?(params: LiquidityParams, walletProvider: EdwinWallet): Promise<any>;
+    swap(params: LiquidityParams): Promise<string>;
+    addLiquidity(params: LiquidityParams): Promise<string>;
+    removeLiquidity(params: LiquidityParams): Promise<string>;
+    getPools?(params: LiquidityParams): Promise<any>;
+    getPositions?(params: LiquidityParams): Promise<any>;
 }
 
 export interface EdwinAction {
     name: string;
     description: string;
     template: string;
-    provider: EdwinProvider;
+    edwin: Edwin;
     execute: (params: any) => Promise<any>;
     // Future feature: pass input schema to params to enforce correct input
 }

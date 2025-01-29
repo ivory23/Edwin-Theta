@@ -1,24 +1,19 @@
-import type { IDEXProtocol, SwapParams, LiquidityParams, EdwinWallet, SupportedChain } from "../../types";
-import type { Transaction } from "../../types";
-import { EdwinEVMWallet } from "../../edwin-core/providers/evm_wallet";
+import type { IDEXProtocol, LiquidityParams, SupportedChain } from "../../types";
+import { EdwinEVMWallet } from "../../edwin-core/wallets/evm_wallet";
 
 export class UniswapProtocol implements IDEXProtocol {
     supportedChains: SupportedChain[] = ["mainnet"];
+    private wallet: EdwinEVMWallet;
 
-    async swap(params: SwapParams, walletProvider: EdwinEVMWallet): Promise<Transaction> {
-        const {
-            chain,
-            contract,
-            tokenIn,
-            tokenOut,
-            amount,
-            slippage,
-        } = params;
-
-        throw new Error("Not implemented");
+    constructor(wallet: EdwinEVMWallet) {
+        this.wallet = wallet;
     }
 
-    async addLiquidity(params: LiquidityParams, walletProvider: EdwinEVMWallet): Promise<string> {
+    async getPortfolio(): Promise<string> {
+        return "";
+    }
+
+    async swap(params: LiquidityParams): Promise<string> {
         const {
             chain,
             asset,
@@ -30,11 +25,23 @@ export class UniswapProtocol implements IDEXProtocol {
         throw new Error("Not implemented");
     }
 
-    async removeLiquidity(params: LiquidityParams, walletProvider: EdwinEVMWallet): Promise<Transaction> {
+    async addLiquidity(params: LiquidityParams): Promise<string> {
+        const {
+            chain,
+            asset,
+            amount,
+            assetB,
+            amountB,
+        } = params;
+
         throw new Error("Not implemented");
     }
 
-    async getQuote(params: SwapParams): Promise<string> {
+    async removeLiquidity(params: LiquidityParams): Promise<string> {
+        throw new Error("Not implemented");
+    }
+
+    async getQuote(params: LiquidityParams): Promise<string> {
         throw new Error("Not implemented");
     }
 }

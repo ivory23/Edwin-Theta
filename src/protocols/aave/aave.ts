@@ -1,18 +1,26 @@
 import { Pool, EthereumTransactionTypeExtended } from "@aave/contract-helpers";
 import { AaveV3Base } from "@bgd-labs/aave-address-book";
 import { ethers, providers } from "ethers";
-import { EdwinEVMWallet } from "../../edwin-core/providers/evm_wallet";
+import { EdwinEVMWallet } from "../../edwin-core/wallets/evm_wallet";
 import {
     type ILendingProtocol,
     type SupplyParams,
     type WithdrawParams,
-    type Transaction,
     type SupportedChain,
     type SupportedEVMChain,
 } from "../../types";
 
 export class AaveProtocol implements ILendingProtocol {
     public supportedChains: SupportedChain[] = ["base"];
+    private wallet: EdwinEVMWallet;
+
+    constructor(wallet: EdwinEVMWallet) {
+        this.wallet = wallet;
+    }
+
+    async getPortfolio(): Promise<string> {
+        return "";
+    }
 
     private getAaveChain(chain: SupportedChain): SupportedEVMChain {
         if (!this.supportedChains.includes(chain)) {
@@ -40,7 +48,7 @@ export class AaveProtocol implements ILendingProtocol {
         }
     }
 
-    async supply(params: SupplyParams, walletProvider: EdwinEVMWallet): Promise<Transaction> {
+    async supply(params: SupplyParams): Promise<string> {
         const { chain, amount, asset, data } = params;
         console.log(
             `Calling the inner AAVE logic to supply ${amount} ${asset}`
@@ -48,9 +56,9 @@ export class AaveProtocol implements ILendingProtocol {
 
         try {
             const aaveChain = this.getAaveChain(chain);      
-            walletProvider.switchChain(aaveChain);
+            this.wallet.switchChain(aaveChain);
             console.log(`Switched to chain: ${chain}`);
-            const walletClient = walletProvider.getWalletClient(aaveChain);
+            const walletClient = this.wallet.getWalletClient(aaveChain);
             console.log(`Got wallet client for chain: ${chain}`);
 
             // Log the RPC URL from the transport
@@ -58,7 +66,7 @@ export class AaveProtocol implements ILendingProtocol {
             const provider = new providers.JsonRpcProvider(walletClient.transport.url);
             console.log(`Created ethers provider`);
 
-            const ethers_wallet = walletProvider.getEthersWallet(walletClient, provider);
+            const ethers_wallet = this.wallet.getEthersWallet(walletClient, provider);
             ethers_wallet.connect(provider);
             console.log(`Created ethers wallet`);
 
@@ -124,12 +132,7 @@ export class AaveProtocol implements ILendingProtocol {
                 }
                 // Return the last transaction
                 const finalTx = results[results.length - 1];
-                return {
-                    hash: finalTx.hash as `0x${string}`,
-                    from: finalTx.from as `0x${string}`,
-                    to: finalTx.to as `0x${string}`,
-                    value: Number(amount),
-                };
+                return "Successfully supplied " + params.amount + " " + params.asset + " to Aave, transaction signature: " + finalTx.hash;
             }
             else {
                 throw new Error("No transaction generated from Aave Pool");
@@ -141,7 +144,7 @@ export class AaveProtocol implements ILendingProtocol {
         }
     }
 
-    async withdraw(params: WithdrawParams, walletProvider: EdwinEVMWallet): Promise<Transaction> {
+    async withdraw(params: WithdrawParams): Promise<string> {
         const { amount, asset } = params;
         console.log(
             `Calling the inner AAVE logic to withdraw ${amount} ${asset}`

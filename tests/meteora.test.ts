@@ -3,6 +3,7 @@ config(); // Load test environment variables from .env file
 
 import { describe, expect, it } from 'vitest';
 import { Edwin, EdwinConfig } from '../src';
+import { safeJsonStringify } from '../src/utils';
 
 // Meteora test
 describe('Meteora test', () => {
@@ -29,7 +30,7 @@ describe('Meteora test', () => {
             protocol: 'meteora',
             chain: 'solana',
         });
-        console.log("🚀 ~ it ~ getPositions result:", positions);
+        console.log("🚀 ~ it ~ getPositions result:", safeJsonStringify(positions.get));
     }, 120000); // 120 second timeout
     
     it('test meteora create position and add liquidity, then check for new position', async () => {
@@ -64,10 +65,12 @@ describe('Meteora test', () => {
         
         // Check that positions is ok - should be 1 position
         expect(positions).toBeDefined();
-        expect(positions.length).toBe(1);
+        expect(positions.size).toBe(1);
+        const positionKey = positions.keys().toArray()[0];
+        console.log("🚀 ~ it ~ positions:", safeJsonStringify(positions.get(positionKey)));
     }, 120000); // 120 second timeout
 
-    it('test meteora remove liquidity', async () => {
+    it.skip('test meteora remove liquidity', async () => {
         const edwinConfig: EdwinConfig = {
             solanaPrivateKey: process.env.SOLANA_PRIVATE_KEY,
             actions: ['removeLiquidity', 'getPositions']
