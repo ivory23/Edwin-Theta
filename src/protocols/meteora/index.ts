@@ -133,21 +133,10 @@ export class MeteoraProtocol implements IDEXProtocol {
     }
 
     async getPositions(params: LiquidityParams): Promise<any> {
-        const { poolAddress } = params;
         try {
             const connection = this.wallet.getConnection();
-            if (poolAddress) {
-                const dlmmPool = await DLMM.create(connection, new PublicKey(poolAddress));
-                const { userPositions } = await dlmmPool.getPositionsByUserAndLbPair(this.wallet.getPublicKey());
-                if (!userPositions || userPositions.length === 0) {
-                    return [];
-                }
-                const binData = userPositions[0].positionData.positionBinData;
-                return binData;
-            } else {
-                const dlmmPools = await DLMM.getAllLbPairPositionsByUser(connection, this.wallet.getPublicKey());
-                return dlmmPools;
-            }
+            const dlmmPools = await DLMM.getAllLbPairPositionsByUser(connection, this.wallet.getPublicKey());
+            return dlmmPools;
         } catch (error: unknown) {
             console.error("Meteora getPositions error:", error);
             const message = error instanceof Error ? error.message : String(error);

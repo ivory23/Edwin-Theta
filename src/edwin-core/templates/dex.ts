@@ -97,17 +97,13 @@ First, review the recent messages from the conversation:
 Your goal is to extract the following information about the requested liquidity provision:
 1. Chain to execute on
 2. Protocol to use (DEX)
-3. Name of first asset
-4. Name of second asset
 
 This must be your only output and it should be in JSON format, or you will be fired:
 
 \`\`\`json
 {
     "chain": string,
-    "protocol": string,
-    "asset": string,
-    "assetB": string
+    "protocol": string
 }
 \`\`\`
 `;
