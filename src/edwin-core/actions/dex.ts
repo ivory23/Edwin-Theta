@@ -1,6 +1,6 @@
 import { EdwinAction } from "../../types";
 import { IDEXProtocol } from "../../types";
-import { addLiquidityTemplate, removeLiquidityTemplate, getPoolsTemplate } from "../templates";
+import { addLiquidityTemplate, removeLiquidityTemplate, getPoolsTemplate, getPositionsTemplate } from "../templates";
 import { Edwin } from "../../edwin-client";
 
 
@@ -15,7 +15,7 @@ export class SwapAction implements EdwinAction {
     }
 
     async execute(params: any): Promise<any> {
-        const protocol = this.edwin.protocols[params.protocol] as IDEXProtocol;
+        const protocol = this.edwin.protocols[params.protocol.toLowerCase()] as IDEXProtocol;
         if (!protocol) {
             throw new Error(`Protocol ${params.protocol} not found`);
         }
@@ -34,7 +34,7 @@ export class AddLiquidityAction implements EdwinAction {
     }
 
     async execute(params: any): Promise<any> {
-        const protocol = this.edwin.protocols[params.protocol] as IDEXProtocol;
+        const protocol = this.edwin.protocols[params.protocol.toLowerCase()] as IDEXProtocol;
         if (!protocol) {
             throw new Error(`Protocol ${params.protocol} not found`);
         }
@@ -53,7 +53,7 @@ export class RemoveLiquidityAction implements EdwinAction {
     }
 
     async execute(params: any): Promise<any> {
-        const protocol = this.edwin.protocols[params.protocol] as IDEXProtocol;
+        const protocol = this.edwin.protocols[params.protocol.toLowerCase()] as IDEXProtocol;
         if (!protocol) {
             throw new Error(`Protocol ${params.protocol} not found`);
         }
@@ -72,7 +72,7 @@ export class GetPoolsAction implements EdwinAction {
     }
 
     async execute(params: any): Promise<any> {
-        const protocol = this.edwin.protocols[params.protocol] as IDEXProtocol;
+        const protocol = this.edwin.protocols[params.protocol.toLowerCase()] as IDEXProtocol;
         if (!protocol) {
             throw new Error(`Protocol ${params.protocol} not found`);
         }
@@ -83,3 +83,24 @@ export class GetPoolsAction implements EdwinAction {
     }
 }
 
+export class GetPositionsAction implements EdwinAction {
+    name = "GET_POSITIONS";
+    description = "Get positions from a DEX";
+    template = getPositionsTemplate;
+    edwin: Edwin;
+
+    constructor(edwin: Edwin) {
+        this.edwin = edwin;
+    }
+
+    async execute(params: any): Promise<any> {
+        const protocol = this.edwin.protocols[params.protocol.toLowerCase()] as IDEXProtocol;
+        if (!protocol) {
+            throw new Error(`Protocol ${params.protocol} not found`);
+        }
+        if (!protocol.getPositions) {
+            throw new Error(`Protocol ${params.protocol} does not support getPositions`);
+        }
+        return await protocol.getPositions(params);
+    }
+}

@@ -24,15 +24,7 @@ interface MeteoraPool {
 
 interface Position {
     address: string;
-    created_at: string;
-    owner: string;
     pair_address: string;
-    total_fee_usd_claimed: number;
-    total_fee_x_claimed: number;
-    total_fee_y_claimed: number; 
-    total_reward_usd_claimed: number;
-    total_reward_x_claimed: number;
-    total_reward_y_claimed: number;
 }
 
 export class MeteoraProtocol implements IDEXProtocol {
@@ -48,7 +40,7 @@ export class MeteoraProtocol implements IDEXProtocol {
     }
 
     async getPortfolio(): Promise<string> {
-        return "Meteora portfolio not supported";
+        return "Meteora open positions:\n" + Array.from(this.openPositions).join("\n");
     }
 
     async swap(params: LiquidityParams): Promise<string> {
@@ -102,7 +94,7 @@ export class MeteoraProtocol implements IDEXProtocol {
 
     async getPositionInfo(positionAddress: string): Promise<Position> {
         try {
-            const response = await fetch(`https://dlmm-api.meteora.ag/position/${positionAddress}/deposits`);
+            const response = await fetch(`https://dlmm-api.meteora.ag/position_v2/${positionAddress}`);
             if (!response.ok) {
                 throw new Error(`Failed to fetch position info: ${response.statusText}`);
             }
@@ -138,6 +130,29 @@ export class MeteoraProtocol implements IDEXProtocol {
             current_price: pool.current_price,
             apr: pool.apr
         }));
+    }
+
+    async getPositions(params: LiquidityParams): Promise<any> {
+        const { poolAddress } = params;
+        try {
+            const connection = this.wallet.getConnection();
+            if (poolAddress) {
+                const dlmmPool = await DLMM.create(connection, new PublicKey(poolAddress));
+                const { userPositions } = await dlmmPool.getPositionsByUserAndLbPair(this.wallet.getPublicKey());
+                if (!userPositions || userPositions.length === 0) {
+                    return [];
+                }
+                const binData = userPositions[0].positionData.positionBinData;
+                return binData;
+            } else {
+                const dlmmPools = await DLMM.getAllLbPairPositionsByUser(connection, this.wallet.getPublicKey());
+                return dlmmPools;
+            }
+        } catch (error: unknown) {
+            console.error("Meteora getPositions error:", error);
+            const message = error instanceof Error ? error.message : String(error);
+            throw new Error(`Meteora getPositions failed: ${message}`);
+        }
     }
 
     private async calculateAmounts(amount: string, amountB: string, activeBinPricePerToken: string, dlmmPool: DLMM): Promise<[BN, BN]> {
@@ -207,12 +222,13 @@ export class MeteoraProtocol implements IDEXProtocol {
             let tx;
             let newBalancePosition;
 
-            const existingPosition = await this.getPositionInfo(poolAddress);
-
+            // Check if user has an existing position
+            const { userPositions } = await dlmmPool.getPositionsByUserAndLbPair(this.wallet.getPublicKey());
+            const existingPosition = userPositions?.[0];
             if (existingPosition) {
                 // Add to existing position
                 tx = await dlmmPool.addLiquidityByStrategy({
-                    positionPubKey: new PublicKey(existingPosition.address),
+                    positionPubKey: existingPosition.publicKey,
                     user: this.wallet.getPublicKey(),
                     totalXAmount,
                     totalYAmount,
@@ -298,7 +314,8 @@ export class MeteoraProtocol implements IDEXProtocol {
                 const signature = await this.wallet.sendTransaction(connection, prioritizedTx, [this.wallet.getSigner()]);
                 await this.wallet.waitForConfirmationGracefully(connection, signature);
             }
-
+            // Remove position from tracked open positions
+            this.openPositions.delete(userPositions[0].publicKey.toString());
             return "Successfully removed liquidity from pool " + poolAddress + ", transaction signature: " + signature;
         } catch (error: unknown) {
             console.error("Meteora remove liquidity error:", error);

@@ -52,7 +52,7 @@ export class WithdrawAction implements EdwinAction {
         );
         try {
             // Get the appropriate protocol service based on the protocol name
-            const lendingProtocol = this.edwin.protocols[params.protocol] as ILendingProtocol;
+            const lendingProtocol = this.edwin.protocols[params.protocol.toLowerCase()] as ILendingProtocol;
             if (!lendingProtocol) {
                 throw new Error(`Unsupported protocol: ${params.protocol}`);
             }

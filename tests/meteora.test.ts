@@ -30,7 +30,7 @@ describe('Meteora test', () => {
             protocol: 'meteora',
             chain: 'solana',
         });
-        console.log("🚀 ~ it ~ getPositions result:", safeJsonStringify(positions.get));
+        console.log("🚀 ~ it ~ getPositions result:", safeJsonStringify(positions));
     }, 120000); // 120 second timeout
     
     it('test meteora create position and add liquidity, then check for new position', async () => {

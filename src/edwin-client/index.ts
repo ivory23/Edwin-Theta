@@ -12,6 +12,7 @@ import {
   StakeAction,
   AddLiquidityAction,
   GetPoolsAction,
+  GetPositionsAction,
   RemoveLiquidityAction,
   SwapAction
 } from '../edwin-core/actions';
@@ -31,6 +32,7 @@ const ACTION_MAP: Record<string, new (edwin: Edwin) => EdwinAction> = {
   'addLiquidity': AddLiquidityAction,
   'getPools': GetPoolsAction,
   'removeLiquidity': RemoveLiquidityAction,
+  'getPositions': GetPositionsAction,
   'swap': SwapAction
 };
 
