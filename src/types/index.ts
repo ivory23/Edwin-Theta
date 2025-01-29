@@ -1,24 +1,11 @@
 import type { Token } from "@lifi/types";
 import type { Address, Chain, Hash } from "viem";
-import { EdwinWallet } from "../edwin-core/providers/wallet";
-import { EdwinProvider } from "../edwin-core/providers";
-import { _SupportedEVMChainList } from "../edwin-core/providers/evm_wallet";
-
-export type { EdwinWallet, EdwinProvider };
+import { _SupportedEVMChainList } from "../edwin-core/wallets/evm_wallet";
+import type { Edwin } from "../edwin-client";
 
 export type SupportedEVMChain = (typeof _SupportedEVMChainList)[number];
 
 export type SupportedChain = SupportedEVMChain | 'solana';
-
-// Transaction types
-export interface Transaction {
-    hash: Hash;
-    from: Address;
-    to: Address;
-    value: number;
-    data?: `0x${string}`;
-    chainId?: number;
-}
 
 // Token types
 export interface TokenWithBalance {
@@ -70,48 +57,42 @@ export interface SupplyParams extends ActionParams {}
 export interface WithdrawParams extends ActionParams {}
 
 export interface StakeParams extends ActionParams {}
-export interface SwapParams extends ActionParams {
-    contract: string;
-    tokenIn: string;
-    tokenOut: string;
-    amountOut?: string;
-    slippage: number;
-    recipient?: string;
-}
 
 export interface LiquidityParams extends ActionParams {
-    contract: string;
-    tokenA: string;
-    tokenB: string;
-    amountB: string;
+    assetB: string;
+    amountB?: string;
+    poolAddress?: string;
 }
 
 export interface DeFiProtocol {
     supportedChains: SupportedChain[];
+    getPortfolio(): Promise<string>;
 }
 
 export interface ILendingProtocol extends DeFiProtocol {
-    supply(params: SupplyParams, walletProvider: EdwinWallet): Promise<Transaction>;
-    withdraw(params: WithdrawParams, walletProvider: EdwinWallet): Promise<Transaction>;
+    supply(params: SupplyParams): Promise<string>;
+    withdraw(params: WithdrawParams): Promise<string>;
 }
 
 export interface IStakingProtocol extends DeFiProtocol {
-    stake(params: StakeParams, walletProvider: EdwinWallet): Promise<Transaction>;
-    unstake(params: StakeParams, walletProvider: EdwinWallet): Promise<Transaction>;
-    claimRewards?(params: StakeParams, walletProvider: EdwinWallet): Promise<Transaction>;
+    stake(params: StakeParams): Promise<string>;
+    unstake(params: StakeParams): Promise<string>;
+    claimRewards?(params: StakeParams): Promise<string>;
 }
 
 export interface IDEXProtocol extends DeFiProtocol {
-    swap(params: SwapParams, walletProvider: EdwinWallet): Promise<Transaction>;
-    addLiquidity(params: LiquidityParams, walletProvider: EdwinWallet): Promise<Transaction>;
-    removeLiquidity(params: LiquidityParams, walletProvider: EdwinWallet): Promise<Transaction>;
-    getQuote?(params: SwapParams, walletProvider: EdwinWallet): Promise<string>;
+    swap(params: LiquidityParams): Promise<string>;
+    addLiquidity(params: LiquidityParams): Promise<string>;
+    removeLiquidity(params: LiquidityParams): Promise<string>;
+    getPools?(params: LiquidityParams): Promise<any>;
+    getPositions?(params: LiquidityParams): Promise<any>;
 }
 
 export interface EdwinAction {
     name: string;
     description: string;
     template: string;
-    provider: EdwinProvider;
-    execute: (params: ActionParams) => Promise<Transaction>;
+    edwin: Edwin;
+    execute: (params: any) => Promise<any>;
+    // Future feature: pass input schema to params to enforce correct input
 }
