@@ -31,7 +31,7 @@ Provide the final output in JSON format:
 
 export class AddLiquidityAction implements EdwinAction {
     name = "ADD_LIQUIDITY";
-    description = "Add liquidity amounts, amount and amountB, to a DEX pool specified by a single pool address";
+    description = "Adds liquidity to a DEX pool. Required parameters: chain (blockchain network), protocol (DEX name), poolAddress (address of the liquidity pool), amount (quantity of first token to provide), and amountB (quantity of second token to provide, or 'auto' for automatic calculation)";
     template = addLiquidityTemplate;
     edwin: Edwin;
 

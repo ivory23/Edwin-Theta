@@ -30,7 +30,7 @@ This must be your only output and it should be in JSON format, or you will be fi
 
 export class GetPoolsAction implements EdwinAction {
     name = "GET_POOLS";
-    description = "Get pools from a DEX";
+    description = "Retrieves available liquidity pools from a DEX, including pool addresses, token reserves, fees, and APY information. Required parameters: chain (blockchain network), protocol (DEX name), asset (first token symbol), and assetB (second token symbol)";
     template = getPoolsTemplate;
     edwin: Edwin;
 

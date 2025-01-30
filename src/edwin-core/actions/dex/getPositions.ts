@@ -25,7 +25,7 @@ This must be your only output and it should be in JSON format, or you will be fi
 
 export class GetPositionsAction implements EdwinAction {
     name = "GET_POSITIONS";
-    description = "Get positions from a DEX";
+    description = "Retrieves user's active liquidity positions from a DEX, including position IDs, token amounts, pool information, and current value. Required parameters: chain (blockchain network) and protocol (DEX name)";
     template = getPositionsTemplate;
     edwin: Edwin;
 

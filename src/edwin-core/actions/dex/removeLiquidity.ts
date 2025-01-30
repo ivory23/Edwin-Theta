@@ -36,7 +36,7 @@ Provide the final output in JSON format:
 
 export class RemoveLiquidityAction implements EdwinAction {
     name = "REMOVE_LIQUIDITY";
-    description = "Remove liquidity from a DEX pool";
+    description = "Removes liquidity from a DEX pool, withdrawing the underlying tokens back to the user's wallet. Required parameters: chain (blockchain network), protocol (DEX name), address (pool address), and amount (quantity of LP tokens to remove, can be 'max' for full withdrawal)";
     template = removeLiquidityTemplate;
     edwin: Edwin;
 
