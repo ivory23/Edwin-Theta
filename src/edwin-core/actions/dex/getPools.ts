@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { Edwin } from "../../../edwin-client";
 import { EdwinAction, IDEXProtocol } from "../../../types";
 
@@ -33,6 +34,12 @@ export class GetPoolsAction implements EdwinAction {
     description = "Retrieves available liquidity pools from a DEX, including pool addresses, token reserves, fees, and APY information. Required parameters: chain (blockchain network), protocol (DEX name), asset (first token symbol), and assetB (second token symbol)";
     template = getPoolsTemplate;
     edwin: Edwin;
+    schema = z.object({
+        protocol: z.string(),
+        chain: z.string(),
+        asset: z.string(),
+        assetB: z.string()
+    });
 
     constructor(edwin: Edwin) {
         this.edwin = edwin;

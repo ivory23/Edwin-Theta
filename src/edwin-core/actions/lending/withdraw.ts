@@ -1,5 +1,6 @@
 import type { WithdrawParams, EdwinAction, ILendingProtocol } from "../../../types";
 import { Edwin } from "../../../edwin-client";
+import { z } from "zod";
 
 
 export const withdrawTemplate = `You are an AI assistant specialized in processing DeFi withdraw requests from lending protocols. Your task is to extract specific information from user messages and format it into a structured JSON response.
@@ -49,6 +50,12 @@ export class WithdrawAction implements EdwinAction {
     public description = 'Withdraw assets from a lending protocol';
     public template = withdrawTemplate;
     public edwin: Edwin;
+    public schema = z.object({
+        protocol: z.string(),
+        chain: z.string(),
+        asset: z.string(),
+        amount: z.string()
+    });
 
     constructor(edwin: Edwin) {
         this.edwin = edwin;
