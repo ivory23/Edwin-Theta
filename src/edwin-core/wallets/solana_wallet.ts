@@ -5,6 +5,7 @@ import { EdwinWallet } from "./wallet";
 export class EdwinSolanaWallet extends EdwinWallet {
     private wallet: Keypair;
     private wallet_address: PublicKey;
+    private static readonly TRANSACTION_PRIORITY_LEVEL = "VeryHigh";
 
     constructor(protected privateKey: string) {
         super();
@@ -49,14 +50,14 @@ export class EdwinSolanaWallet extends EdwinWallet {
                 "params": [{
                     "transaction": serializedTransaction,
                     "options": {
-                        "recommended": true
+                        "priorityLevel": EdwinSolanaWallet.TRANSACTION_PRIORITY_LEVEL
                     }
                 }]
             })
         });
         const data = await response.json();
         console.log("🚀 ~ getPriorityFee ~ data:", data)
-        return data.result.priorityFeeEstimate;
+        return Math.max(data.result.priorityFeeEstimate, 10_000);
     }
 
     // Function to gracefully wait for transaction confirmation
