@@ -1,11 +1,18 @@
-import bs58 from "bs58";
-import { ComputeBudgetProgram, Connection, Keypair, PublicKey, Transaction, VersionedTransaction } from "@solana/web3.js";
-import { EdwinWallet } from "./wallet";
+import bs58 from 'bs58';
+import {
+    ComputeBudgetProgram,
+    Connection,
+    Keypair,
+    PublicKey,
+    Transaction,
+    VersionedTransaction,
+} from '@solana/web3.js';
+import { EdwinWallet } from './wallet';
 
 export class EdwinSolanaWallet extends EdwinWallet {
     private wallet: Keypair;
     private wallet_address: PublicKey;
-    private static readonly TRANSACTION_PRIORITY_LEVEL = "VeryHigh";
+    private static readonly TRANSACTION_PRIORITY_LEVEL = 'VeryHigh';
 
     constructor(protected privateKey: string) {
         super();
@@ -18,7 +25,10 @@ export class EdwinSolanaWallet extends EdwinWallet {
     }
 
     getConnection(customRpcUrl?: string): Connection {
-        return new Connection(customRpcUrl || process.env.SOLANA_RPC_URL! || 'https://api.mainnet-beta.solana.com', 'confirmed');
+        return new Connection(
+            customRpcUrl || process.env.SOLANA_RPC_URL! || 'https://api.mainnet-beta.solana.com',
+            'confirmed'
+        );
     }
 
     signTransaction(transaction: VersionedTransaction) {
@@ -37,26 +47,28 @@ export class EdwinSolanaWallet extends EdwinWallet {
         const serializedTransaction = bs58.encode(transaction.serialize({ requireAllSignatures: false }));
         const heliusApiKey = process.env.HELIUS_API_KEY;
         if (!heliusApiKey) {
-            throw new Error("HELIUS_API_KEY is not set");
+            throw new Error('HELIUS_API_KEY is not set');
         }
         const heliusApiUrl = `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`;
         const response = await fetch(heliusApiUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                "jsonrpc": "2.0",
-                "id": 1,
-                "method": "getPriorityFeeEstimate",
-                "params": [{
-                    "transaction": serializedTransaction,
-                    "options": {
-                        "priorityLevel": EdwinSolanaWallet.TRANSACTION_PRIORITY_LEVEL
-                    }
-                }]
-            })
+                jsonrpc: '2.0',
+                id: 1,
+                method: 'getPriorityFeeEstimate',
+                params: [
+                    {
+                        transaction: serializedTransaction,
+                        options: {
+                            priorityLevel: EdwinSolanaWallet.TRANSACTION_PRIORITY_LEVEL,
+                        },
+                    },
+                ],
+            }),
         });
         const data = await response.json();
-        console.log("🚀 ~ getPriorityFee ~ data:", data)
+        console.log('🚀 ~ getPriorityFee ~ data:', data);
         return Math.max(data.result.priorityFeeEstimate, 10_000);
     }
 
@@ -68,56 +80,56 @@ export class EdwinSolanaWallet extends EdwinWallet {
     ) {
         const startTime = Date.now();
         let status = null;
-    
+
         while (Date.now() - startTime < timeout) {
             // Fetch the status of the transaction
             const { value } = await connection.getSignatureStatus(signature, {
                 searchTransactionHistory: true,
             });
-            console.log("🚀 ~ waitForConfirmationGracefully ~ value:", value)
+            console.log('🚀 ~ waitForConfirmationGracefully ~ value:', value);
             if (value) {
-                if (value.confirmationStatus === "confirmed" || value.confirmationStatus === "finalized") {
+                if (value.confirmationStatus === 'confirmed' || value.confirmationStatus === 'finalized') {
                     return value; // Transaction is confirmed or finalized
                 }
             }
-        
+
             // Wait for a short interval before retrying
-            await new Promise((resolve) => setTimeout(resolve, 2000));
+            await new Promise(resolve => setTimeout(resolve, 2000));
         }
-        throw new Error("Transaction confirmation timed out");
+        throw new Error('Transaction confirmation timed out');
     }
 
     async sendTransaction(connection: Connection, transaction: Transaction, signers: Keypair[]) {
         // Get a fresh blockhash right before sending
         const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('finalized');
         transaction.recentBlockhash = blockhash; // Update the blockhash
-        
+
         const messageV0 = transaction.compileMessage();
         const versionedTx = new VersionedTransaction(messageV0);
         versionedTx.sign(signers);
-        
+
         const signature = await connection.sendTransaction(versionedTx, {
             skipPreflight: false,
             maxRetries: 3,
-            preflightCommitment: 'confirmed'
-        });  
+            preflightCommitment: 'confirmed',
+        });
         return signature;
     }
 
     async getIncreasedTransactionPriorityFee(connection: Connection, transaction: Transaction): Promise<Transaction> {
         // Create a new transaction and filter out any existing compute budget instructions
         const updatedInstructions = transaction.instructions.filter(
-            (ix) => ix.programId.toBase58() !== ComputeBudgetProgram.programId.toBase58()
+            ix => ix.programId.toBase58() !== ComputeBudgetProgram.programId.toBase58()
         );
 
         // Create a temporary transaction for priority fee estimation
         const tempTransaction = new Transaction();
         tempTransaction.add(...updatedInstructions);
         tempTransaction.feePayer = this.wallet_address;
-        
+
         const { blockhash } = await connection.getLatestBlockhash();
         if (!blockhash) {
-            throw new Error("Failed to get latest blockhash");
+            throw new Error('Failed to get latest blockhash');
         }
         tempTransaction.recentBlockhash = blockhash;
 
@@ -131,7 +143,7 @@ export class EdwinSolanaWallet extends EdwinWallet {
             ComputeBudgetProgram.setComputeUnitPrice({ microLamports: priorityFee }),
             ...updatedInstructions
         );
-        
+
         finalTransaction.feePayer = this.wallet_address;
         finalTransaction.recentBlockhash = blockhash;
 

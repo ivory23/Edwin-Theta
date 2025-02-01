@@ -1,6 +1,6 @@
-import { z } from "zod";
-import { Edwin } from "../../../edwin-client";
-import { EdwinAction, IDEXProtocol } from "../../../types";
+import { z } from 'zod';
+import { Edwin } from '../../../edwin-client';
+import { EdwinAction, IDEXProtocol } from '../../../types';
 
 export const getPoolsTemplate = `You are an AI assistant specialized in processing DeFi liquidity provision requests. Your task is to extract specific information from user messages and format it into a structured JSON response.
 
@@ -27,18 +27,19 @@ This must be your only output and it should be in JSON format, or you will be fi
     "assetB": string
 }
 \`\`\`
-`; 
+`;
 
 export class GetPoolsAction implements EdwinAction {
-    name = "GET_POOLS";
-    description = "Retrieves available liquidity pools from a DEX, including pool addresses, token reserves, fees, and APY information. Required parameters: chain (blockchain network), protocol (DEX name), asset (first token symbol), and assetB (second token symbol)";
+    name = 'GET_POOLS';
+    description =
+        'Retrieves available liquidity pools from a DEX, including pool addresses, token reserves, fees, and APY information. Required parameters: chain (blockchain network), protocol (DEX name), asset (first token symbol), and assetB (second token symbol)';
     template = getPoolsTemplate;
     edwin: Edwin;
     schema = z.object({
         protocol: z.string(),
         chain: z.string(),
         asset: z.string(),
-        assetB: z.string()
+        assetB: z.string(),
     });
 
     constructor(edwin: Edwin) {

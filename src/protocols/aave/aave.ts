@@ -1,17 +1,17 @@
-import { Pool, EthereumTransactionTypeExtended } from "@aave/contract-helpers";
-import { AaveV3Base } from "@bgd-labs/aave-address-book";
-import { ethers, providers } from "ethers";
-import { EdwinEVMWallet } from "../../edwin-core/wallets/evm_wallet";
+import { Pool, EthereumTransactionTypeExtended } from '@aave/contract-helpers';
+import { AaveV3Base } from '@bgd-labs/aave-address-book';
+import { ethers, providers } from 'ethers';
+import { EdwinEVMWallet } from '../../edwin-core/wallets/evm_wallet';
 import {
     type ILendingProtocol,
     type SupplyParams,
     type WithdrawParams,
     type SupportedChain,
     type SupportedEVMChain,
-} from "../../types";
+} from '../../types';
 
 export class AaveProtocol implements ILendingProtocol {
-    public supportedChains: SupportedChain[] = ["base"];
+    public supportedChains: SupportedChain[] = ['base'];
     private wallet: EdwinEVMWallet;
 
     constructor(wallet: EdwinEVMWallet) {
@@ -19,7 +19,7 @@ export class AaveProtocol implements ILendingProtocol {
     }
 
     async getPortfolio(): Promise<string> {
-        return "";
+        return '';
     }
 
     private getAaveChain(chain: SupportedChain): SupportedEVMChain {
@@ -50,12 +50,10 @@ export class AaveProtocol implements ILendingProtocol {
 
     async supply(params: SupplyParams): Promise<string> {
         const { chain, amount, asset, data } = params;
-        console.log(
-            `Calling the inner AAVE logic to supply ${amount} ${asset}`
-        );
+        console.log(`Calling the inner AAVE logic to supply ${amount} ${asset}`);
 
         try {
-            const aaveChain = this.getAaveChain(chain);      
+            const aaveChain = this.getAaveChain(chain);
             this.wallet.switchChain(aaveChain);
             console.log(`Switched to chain: ${chain}`);
             const walletClient = this.wallet.getWalletClient(aaveChain);
@@ -75,14 +73,10 @@ export class AaveProtocol implements ILendingProtocol {
                 WETH_GATEWAY: AaveV3Base.WETH_GATEWAY,
             });
             // todo extend to more chains
-            console.log(
-                `Initialized Aave Pool with contract: ${AaveV3Base.POOL}`
-            );
+            console.log(`Initialized Aave Pool with contract: ${AaveV3Base.POOL}`);
 
             // Get the reserve address for the input asset
-            const assetKey = Object.keys(AaveV3Base.ASSETS).find(
-                (key) => key.toLowerCase() === asset.toLowerCase()
-            );
+            const assetKey = Object.keys(AaveV3Base.ASSETS).find(key => key.toLowerCase() === asset.toLowerCase());
 
             if (!assetKey) {
                 throw new Error(`Unsupported asset: ${asset}`);
@@ -113,9 +107,7 @@ export class AaveProtocol implements ILendingProtocol {
             console.log(`Generated ${txs.length} supply transaction(s)`);
 
             // Send some example read transaction to assert the provider and the connection
-            const balance = await provider.getBalance(
-                walletClient.account?.address as string
-            );
+            const balance = await provider.getBalance(walletClient.account?.address as string);
             console.log(`Balance: ${balance}`);
 
             // Submit the transactions
@@ -123,22 +115,24 @@ export class AaveProtocol implements ILendingProtocol {
                 console.log(`Submitting supply transactions`);
                 const results = [];
                 for (const tx of txs) {
-                    const result = await this.submitTransaction(
-                        ethers_wallet.provider,
-                        ethers_wallet,
-                        tx
-                    );
+                    const result = await this.submitTransaction(ethers_wallet.provider, ethers_wallet, tx);
                     results.push(result);
                 }
                 // Return the last transaction
                 const finalTx = results[results.length - 1];
-                return "Successfully supplied " + params.amount + " " + params.asset + " to Aave, transaction signature: " + finalTx.hash;
-            }
-            else {
-                throw new Error("No transaction generated from Aave Pool");
+                return (
+                    'Successfully supplied ' +
+                    params.amount +
+                    ' ' +
+                    params.asset +
+                    ' to Aave, transaction signature: ' +
+                    finalTx.hash
+                );
+            } else {
+                throw new Error('No transaction generated from Aave Pool');
             }
         } catch (error: unknown) {
-            console.error("Aave supply error:", error);
+            console.error('Aave supply error:', error);
             const message = error instanceof Error ? error.message : String(error);
             throw new Error(`Aave supply failed: ${message}`);
         }
@@ -146,13 +140,11 @@ export class AaveProtocol implements ILendingProtocol {
 
     async withdraw(params: WithdrawParams): Promise<string> {
         const { amount, asset } = params;
-        console.log(
-            `Calling the inner AAVE logic to withdraw ${amount} ${asset}`
-        );
+        console.log(`Calling the inner AAVE logic to withdraw ${amount} ${asset}`);
         try {
-            throw new Error("Not implemented");
+            throw new Error('Not implemented');
         } catch (error: unknown) {
-            console.error("Aave withdraw error:", error);
+            console.error('Aave withdraw error:', error);
             const message = error instanceof Error ? error.message : String(error);
             throw new Error(`Aave withdraw failed: ${message}`);
         }

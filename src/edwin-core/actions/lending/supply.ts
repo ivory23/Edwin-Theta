@@ -1,7 +1,6 @@
-import { EdwinAction, ILendingProtocol, SupplyParams } from "../../../types";
-import { Edwin } from "../../../edwin-client";
-import { z } from "zod";
-
+import { EdwinAction, ILendingProtocol, SupplyParams } from '../../../types';
+import { Edwin } from '../../../edwin-client';
+import { z } from 'zod';
 
 export const supplyTemplate = `You are an AI assistant specialized in processing DeFi supply/lending requests. Your task is to extract specific information from user messages and format it into a structured JSON response.
 
@@ -54,7 +53,7 @@ export class SupplyAction implements EdwinAction {
         protocol: z.string(),
         chain: z.string(),
         asset: z.string(),
-        amount: z.string()
+        amount: z.string(),
     });
 
     constructor(edwin: Edwin) {
@@ -62,9 +61,7 @@ export class SupplyAction implements EdwinAction {
     }
 
     async execute(params: SupplyParams): Promise<string> {
-        console.log(
-            `Supplying: ${params.amount} ${params.asset} to ${params.protocol} on ${params.chain})`
-        );
+        console.log(`Supplying: ${params.amount} ${params.asset} to ${params.protocol} on ${params.chain})`);
 
         try {
             console.log(`Getting lending protocol for: ${params.protocol}`);

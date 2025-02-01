@@ -1,3 +1,3 @@
-import { AaveProtocol } from "./aave";
+import { AaveProtocol } from './aave';
 
 export { AaveProtocol };

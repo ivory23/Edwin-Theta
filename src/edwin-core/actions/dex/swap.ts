@@ -1,17 +1,17 @@
-import { z } from "zod";
-import { Edwin } from "../../../edwin-client";
-import { EdwinAction, IDEXProtocol } from "../../../types";
+import { z } from 'zod';
+import { Edwin } from '../../../edwin-client';
+import { EdwinAction, IDEXProtocol } from '../../../types';
 
 export class SwapAction implements EdwinAction {
-    name = "SWAP";
-    description = "Swap tokens on a DEX";
-    template = "swap {amount} {tokenIn} to {tokenOut} on {protocol}";
+    name = 'SWAP';
+    description = 'Swap tokens on a DEX';
+    template = 'swap {amount} {tokenIn} to {tokenOut} on {protocol}';
     edwin: Edwin;
     schema = z.object({
         protocol: z.string(),
         chain: z.string(),
         asset: z.string(),
-        amount: z.string()
+        amount: z.string(),
     });
 
     constructor(edwin: Edwin) {
