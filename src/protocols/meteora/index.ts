@@ -22,6 +22,20 @@ interface MeteoraPool {
     apr: number;
 }
 
+interface MeteoraPoolOutput {
+    address: string;
+    name: string;
+    bin_step: number;
+    base_fee_percentage: string;
+    max_fee_percentage: string;
+    protocol_fee_percentage: string;
+    liquidity: string;
+    fees_24h: number;
+    trade_volume_24h: number;
+    current_price: number;
+    apr_percentage: number;
+}
+
 interface Position {
     address: string;
     pair_address: string;
@@ -106,7 +120,7 @@ export class MeteoraProtocol implements IDEXProtocol {
         }
     }
 
-    async getPools(params: LiquidityParams, limit: number = 10): Promise<MeteoraPool[]> {
+    async getPools(params: LiquidityParams, limit: number = 10): Promise<MeteoraPoolOutput[]> {
         const { asset, assetB } = params;
         if (!asset || !assetB) {
             throw new Error("Asset A and Asset B are required for Meteora getPools");
@@ -128,7 +142,7 @@ export class MeteoraProtocol implements IDEXProtocol {
             fees_24h: pool.fees_24h,
             trade_volume_24h: pool.trade_volume_24h,
             current_price: pool.current_price,
-            apr: pool.apr
+            apr_percentage: pool.apr
         }));
     }
 

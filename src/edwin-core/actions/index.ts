@@ -1,3 +1,3 @@
 export * from './lending';
-export * from './stake';
+export * from './staking';
 export * from './dex';

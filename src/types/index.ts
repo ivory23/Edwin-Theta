@@ -1,7 +1,9 @@
 import type { Token } from "@lifi/types";
-import type { Address, Chain, Hash } from "viem";
+import type { Address, Chain } from "viem";
 import { _SupportedEVMChainList } from "../edwin-core/wallets/evm_wallet";
-import type { Edwin } from "../edwin-client";
+import { ZodTypeDef, ZodSchema } from "zod";
+import { Edwin } from "../edwin-client";
+
 
 export type SupportedEVMChain = (typeof _SupportedEVMChainList)[number];
 
@@ -92,6 +94,7 @@ export interface EdwinAction {
     name: string;
     description: string;
     template: string;
+    schema: ZodSchema<any, ZodTypeDef, any>;
     edwin: Edwin;
     execute: (params: any) => Promise<any>;
     // Future feature: pass input schema to params to enforce correct input
