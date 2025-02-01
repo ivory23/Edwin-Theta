@@ -1,6 +1,4 @@
-import { Transaction } from '@solana/web3.js';
 import { VersionedTransaction } from '@solana/web3.js';
-
 import { ILendingProtocol, SupplyParams, SupportedChain, WithdrawParams } from '../../types';
 import { EdwinSolanaWallet } from '../../edwin-core/wallets/solana_wallet';
 
@@ -92,7 +90,6 @@ export class LuloProtocol implements ILendingProtocol {
             );
 
             const data = await response.json();
-            const solTx = Transaction.from(Buffer.from(data.transaction, 'base64'));
 
             return (
                 'Successfully withdrew ' +

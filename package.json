@@ -5,7 +5,7 @@
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
     "scripts": {
-        "build": "tsup",
+        "build": "pnpm format && pnpm lint && tsup",
         "test": "vitest",
         "lint": "eslint src",
         "prepare": "npm run build",

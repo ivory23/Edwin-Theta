@@ -79,7 +79,6 @@ export class EdwinSolanaWallet extends EdwinWallet {
         timeout: number = 120000 // Timeout in milliseconds
     ) {
         const startTime = Date.now();
-        let status = null;
 
         while (Date.now() - startTime < timeout) {
             // Fetch the status of the transaction
@@ -101,7 +100,7 @@ export class EdwinSolanaWallet extends EdwinWallet {
 
     async sendTransaction(connection: Connection, transaction: Transaction, signers: Keypair[]) {
         // Get a fresh blockhash right before sending
-        const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('finalized');
+        const { blockhash } = await connection.getLatestBlockhash('finalized');
         transaction.recentBlockhash = blockhash; // Update the blockhash
 
         const messageV0 = transaction.compileMessage();

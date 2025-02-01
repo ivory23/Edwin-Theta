@@ -152,6 +152,7 @@ export class MeteoraProtocol implements IDEXProtocol {
 
     async getPositions(params: LiquidityParams): Promise<any> {
         try {
+            console.log('GetPositions params: ', params);
             const connection = this.wallet.getConnection();
             const dlmmPools = await DLMM.getAllLbPairPositionsByUser(connection, this.wallet.getPublicKey());
             return dlmmPools;

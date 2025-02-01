@@ -17,18 +17,18 @@ export class LidoProtocol implements IStakingProtocol {
     async stake(params: StakeParams): Promise<string> {
         const { chain, amount } = params;
 
-        throw new Error('Not implemented');
+        throw new Error(`Not implemented. Params: ${chain} ${amount}`);
     }
 
     async unstake(params: StakeParams): Promise<string> {
         const { chain, amount } = params;
 
-        throw new Error('Not implemented');
+        throw new Error(`Not implemented. Params: ${chain} ${amount}`);
     }
 
     async claimRewards(params: StakeParams): Promise<string> {
         const { chain } = params;
 
-        throw new Error('Not implemented');
+        throw new Error(`Not implemented. Params: ${chain}`);
     }
 }

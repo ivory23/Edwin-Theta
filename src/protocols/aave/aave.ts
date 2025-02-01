@@ -49,7 +49,7 @@ export class AaveProtocol implements ILendingProtocol {
     }
 
     async supply(params: SupplyParams): Promise<string> {
-        const { chain, amount, asset, data } = params;
+        const { chain, amount, asset } = params;
         console.log(`Calling the inner AAVE logic to supply ${amount} ${asset}`);
 
         try {
