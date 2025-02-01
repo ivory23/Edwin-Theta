@@ -1,6 +1,6 @@
-import { EdwinAction, IDEXProtocol } from "../../../types";
-import { Edwin } from "../../../edwin-client";
-import { z } from "zod";
+import { EdwinAction, IDEXProtocol } from '../../../types';
+import { Edwin } from '../../../edwin-client';
+import { z } from 'zod';
 
 export const getPositionsTemplate = `You are an AI assistant specialized in processing DeFi liquidity removal requests. Your task is to extract specific information from user messages and format it into a structured JSON response.
 
@@ -25,18 +25,18 @@ This must be your only output and it should be in JSON format, or you will be fi
 `;
 
 export class GetPositionsAction implements EdwinAction {
-    name = "GET_POSITIONS";
-    description = "Retrieves user's active liquidity positions from a DEX, including position IDs, token amounts, pool information, and current value. Required parameters: chain (blockchain network) and protocol (DEX name)";
+    name = 'GET_POSITIONS';
+    description =
+        "Retrieves user's active liquidity positions from a DEX, including position IDs, token amounts, pool information, and current value. Required parameters: chain (blockchain network) and protocol (DEX name)";
     template = getPositionsTemplate;
     edwin: Edwin;
     schema = z.object({
         protocol: z.string(),
         chain: z.string(),
         asset: z.string(),
-        assetB: z.string()
+        assetB: z.string(),
     });
 
-    
     constructor(edwin: Edwin) {
         this.edwin = edwin;
     }

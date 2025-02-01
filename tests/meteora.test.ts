@@ -9,7 +9,7 @@ import { safeJsonStringify } from '../src/utils';
 describe('Meteora test', () => {
     const edwinConfig: EdwinConfig = {
         solanaPrivateKey: process.env.SOLANA_PRIVATE_KEY,
-        actions: ['getPositions', 'getPools', 'addLiquidity', 'removeLiquidity']
+        actions: ['getPositions', 'getPools', 'addLiquidity', 'removeLiquidity'],
     };
     const edwin = new Edwin(edwinConfig);
 
@@ -17,9 +17,9 @@ describe('Meteora test', () => {
         const results = await edwin.actions.getPools.execute({
             asset: 'sol',
             assetB: 'usdc',
-            protocol: 'meteora'
+            protocol: 'meteora',
         });
-        console.log("🚀 ~ it ~ getPools result:", results);
+        console.log('🚀 ~ it ~ getPools result:', results);
     }, 30000); // 30 second timeout
 
     it('test meteora getPositions - note - need to use a paid RPC', async () => {
@@ -27,16 +27,16 @@ describe('Meteora test', () => {
             protocol: 'meteora',
             chain: 'solana',
         });
-        console.log("🚀 ~ it ~ getPositions result:", safeJsonStringify(positions));
+        console.log('🚀 ~ it ~ getPositions result:', safeJsonStringify(positions));
     }, 120000); // 120 second timeout
-    
+
     it('test meteora create position and add liquidity, then check for new position', async () => {
         const results = await edwin.actions.getPools.execute({
             asset: 'sol',
             assetB: 'usdc',
-            protocol: 'meteora'
+            protocol: 'meteora',
         });
-        console.log("🚀 ~ it ~ result:", results)
+        console.log('🚀 ~ it ~ result:', results);
         const topPoolAddress = results[0].address;
 
         const result = await edwin.actions.addLiquidity.execute({
@@ -44,34 +44,34 @@ describe('Meteora test', () => {
             amount: 'auto',
             amountB: '2',
             protocol: 'meteora',
-            chain: 'solana'
+            chain: 'solana',
         });
-        console.log("🚀 ~ it ~ result:", result)
+        console.log('🚀 ~ it ~ result:', result);
 
         // Get positions after adding liquidity
         const positions = await edwin.actions.getPositions.execute({
             protocol: 'meteora',
-            chain: 'solana'
+            chain: 'solana',
         });
-        console.log("🚀 ~ it ~ positions:", positions)
-        
+        console.log('🚀 ~ it ~ positions:', positions);
+
         // Check that positions is ok - should be 1 position
         expect(positions).toBeDefined();
         expect(positions.size).toBe(1);
         const positionKey = positions.keys().toArray()[0];
-        console.log("🚀 ~ it ~ positions:", safeJsonStringify(positions.get(positionKey)));
+        console.log('🚀 ~ it ~ positions:', safeJsonStringify(positions.get(positionKey)));
     }, 120000); // 120 second timeout
 
     it('test meteora remove liquidity', async () => {
         // Get initial positions
         const positions = await edwin.actions.getPositions.execute({
             protocol: 'meteora',
-            chain: 'solana'
+            chain: 'solana',
         });
-        console.log("🚀 ~ it ~ initial positions:", positions);
-        
+        console.log('🚀 ~ it ~ initial positions:', positions);
+
         if (!positions || positions.size === 0) {
-            return it.skip("No positions found to close - skipping test");
+            return it.skip('No positions found to close - skipping test');
         }
 
         // Remove liquidity from first position found
@@ -81,14 +81,14 @@ describe('Meteora test', () => {
             chain: 'solana',
             poolAddress: poolAddress,
         });
-        console.log("🚀 ~ it ~ removeLiquidity result:", result);
+        console.log('🚀 ~ it ~ removeLiquidity result:', result);
 
         // Check positions after removal
         const positionsAfter = await edwin.actions.getPositions.execute({
             protocol: 'meteora',
-            chain: 'solana'
+            chain: 'solana',
         });
-        console.log("🚀 ~ it ~ positions after removal:", positionsAfter);
+        console.log('🚀 ~ it ~ positions after removal:', positionsAfter);
 
         // Verify position was closed
         expect(positionsAfter.size).toBe(positions.size - 1);

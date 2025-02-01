@@ -1,11 +1,9 @@
-import { Transaction } from "@solana/web3.js";
-import { VersionedTransaction } from "@solana/web3.js";
-
-import { ILendingProtocol, SupplyParams, SupportedChain, WithdrawParams } from "../../types";
-import { EdwinSolanaWallet } from "../../edwin-core/wallets/solana_wallet";
+import { VersionedTransaction } from '@solana/web3.js';
+import { ILendingProtocol, SupplyParams, SupportedChain, WithdrawParams } from '../../types';
+import { EdwinSolanaWallet } from '../../edwin-core/wallets/solana_wallet';
 
 export class LuloProtocol implements ILendingProtocol {
-    public supportedChains: SupportedChain[] = ["solana"];
+    public supportedChains: SupportedChain[] = ['solana'];
     private wallet: EdwinSolanaWallet;
 
     constructor(wallet: EdwinSolanaWallet) {
@@ -13,50 +11,45 @@ export class LuloProtocol implements ILendingProtocol {
     }
 
     async getPortfolio(): Promise<string> {
-        return "";
+        return '';
     }
 
     async supply(params: SupplyParams): Promise<string> {
         try {
             if (!process.env.FLEXLEND_API_KEY) {
-                throw new Error("FLEXLEND_API_KEY is not set (For lulo.fi)");
+                throw new Error('FLEXLEND_API_KEY is not set (For lulo.fi)');
             }
-            const response = await fetch(
-                `https://api.flexlend.fi/generate/account/deposit?priorityFee=50000`,
-                {
-                    method: "POST",
-                    headers: {
-                      "Content-Type": "application/json",
-                      "x-wallet-pubkey": this.wallet.getPublicKey().toBase58(),
-                      "x-api-key": process.env.FLEXLEND_API_KEY!,
-                    },
-                    body: JSON.stringify({
-                      owner: this.wallet.getPublicKey().toBase58(),
-                      mintAddress: params.asset, // This should be the mint address of the asset
-                      depositAmount: params.amount.toString(),
-                    }),
-                  },
-            );
+            const response = await fetch(`https://api.flexlend.fi/generate/account/deposit?priorityFee=50000`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-wallet-pubkey': this.wallet.getPublicKey().toBase58(),
+                    'x-api-key': process.env.FLEXLEND_API_KEY!,
+                },
+                body: JSON.stringify({
+                    owner: this.wallet.getPublicKey().toBase58(),
+                    mintAddress: params.asset, // This should be the mint address of the asset
+                    depositAmount: params.amount.toString(),
+                }),
+            });
             console.log(response);
             const {
                 data: { transactionMeta },
             } = await response.json();
 
             // Deserialize the transaction
-            const luloTxn = VersionedTransaction.deserialize(
-                Buffer.from(transactionMeta[0].transaction, "base64"),
-            );
-        
+            const luloTxn = VersionedTransaction.deserialize(Buffer.from(transactionMeta[0].transaction, 'base64'));
+
             // Get a recent blockhash and set it
             const connection = this.wallet.getConnection();
             const { blockhash } = await connection.getLatestBlockhash();
             luloTxn.message.recentBlockhash = blockhash;
-        
+
             // Sign and send transaction
             this.wallet.signTransaction(luloTxn);
-        
+
             const signature = await connection.sendTransaction(luloTxn, {
-                preflightCommitment: "confirmed",
+                preflightCommitment: 'confirmed',
                 maxRetries: 3,
             });
 
@@ -68,7 +61,14 @@ export class LuloProtocol implements ILendingProtocol {
                 lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
             });
 
-            return "Successfully supplied " + params.amount + " " + params.asset + " to Lulo.fi, transaction signature: " + signature;
+            return (
+                'Successfully supplied ' +
+                params.amount +
+                ' ' +
+                params.asset +
+                ' to Lulo.fi, transaction signature: ' +
+                signature
+            );
         } catch (error: any) {
             throw new Error(`Lulo supply failed: ${error.message}`);
         }
@@ -79,9 +79,9 @@ export class LuloProtocol implements ILendingProtocol {
             const response = await fetch(
                 `https://blink.lulo.fi/actions/withdraw?amount=${params.amount}&symbol=${params.asset}`,
                 {
-                    method: "POST",
+                    method: 'POST',
                     headers: {
-                        "Content-Type": "application/json", 
+                        'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({
                         account: this.wallet.getPublicKey().toBase58(),
@@ -90,9 +90,15 @@ export class LuloProtocol implements ILendingProtocol {
             );
 
             const data = await response.json();
-            const solTx = Transaction.from(Buffer.from(data.transaction, "base64"));
-            
-            return "Successfully withdrew " + params.amount + " " + params.asset + " from Lulo.fi, transaction signature: " + data.signature;
+
+            return (
+                'Successfully withdrew ' +
+                params.amount +
+                ' ' +
+                params.asset +
+                ' from Lulo.fi, transaction signature: ' +
+                data.signature
+            );
         } catch (error: any) {
             throw new Error(`Lulo withdraw failed: ${error.message}`);
         }

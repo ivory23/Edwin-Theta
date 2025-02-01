@@ -13,19 +13,19 @@ describe('Edwin AAVE test', () => {
 
         const edwinConfig: EdwinConfig = {
             evmPrivateKey: evmPrivateKey as `0x${string}`,
-            actions: ['supply']
+            actions: ['supply'],
         };
 
         const edwin = new Edwin(edwinConfig);
-        
+
         expect(edwin).toBeDefined();
-        
+
         // Test supply action
         const result = await edwin.actions.supply.execute({
             protocol: 'aave',
-            chain: 'base', 
+            chain: 'base',
             amount: '0.05',
-            asset: 'usdc'
+            asset: 'usdc',
         });
         expect(result).toBeDefined();
         expect(result.hash).toMatch(/^0x/);

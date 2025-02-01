@@ -1,6 +1,6 @@
-import { z } from "zod";
-import { Edwin } from "../../../edwin-client";
-import { EdwinAction, IDEXProtocol } from "../../../types";
+import { z } from 'zod';
+import { Edwin } from '../../../edwin-client';
+import { EdwinAction, IDEXProtocol } from '../../../types';
 
 const addLiquidityTemplate = `You are an AI assistant specialized in processing DeFi liquidity provision requests. Your task is to extract specific information from user messages and format it into a structured JSON response.
 
@@ -31,8 +31,9 @@ Provide the final output in JSON format:
 `;
 
 export class AddLiquidityAction implements EdwinAction {
-    name = "ADD_LIQUIDITY";
-    description = "Adds liquidity to a DEX pool. Required parameters: chain (blockchain network), protocol (DEX name), poolAddress (address of the liquidity pool), amount (quantity of first token to provide), and amountB (quantity of second token to provide, or 'auto' for automatic calculation)";
+    name = 'ADD_LIQUIDITY';
+    description =
+        "Adds liquidity to a DEX pool. Required parameters: chain (blockchain network), protocol (DEX name), poolAddress (address of the liquidity pool), amount (quantity of first token to provide), and amountB (quantity of second token to provide, or 'auto' for automatic calculation)";
     template = addLiquidityTemplate;
     edwin: Edwin;
     schema = z.object({
@@ -40,7 +41,7 @@ export class AddLiquidityAction implements EdwinAction {
         chain: z.string(),
         poolAddress: z.string(),
         amount: z.string(),
-        amountB: z.string()
+        amountB: z.string(),
     });
 
     constructor(edwin: Edwin) {

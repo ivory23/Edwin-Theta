@@ -1,7 +1,6 @@
-import type { EdwinAction, StakeParams } from "../../../types";
-import { Edwin } from "../../../edwin-client";
-import { z } from "zod";
-
+import type { EdwinAction, StakeParams } from '../../../types';
+import { Edwin } from '../../../edwin-client';
+import { z } from 'zod';
 
 export const stakeTemplate = `You are an AI assistant specialized in processing DeFi staking requests. Your task is to extract specific information from user messages and format it into a structured JSON response.
 
@@ -18,7 +17,7 @@ export class StakeAction implements EdwinAction {
         protocol: z.string(),
         chain: z.string(),
         asset: z.string(),
-        amount: z.string()
+        amount: z.string(),
     });
 
     constructor(edwin: Edwin) {
@@ -28,6 +27,6 @@ export class StakeAction implements EdwinAction {
     async execute(params: StakeParams): Promise<string> {
         console.log(`Staking: ${params.amount} ${params.asset} on ${params.chain})`);
 
-        throw new Error("Not implemented");
+        throw new Error('Not implemented');
     }
 }

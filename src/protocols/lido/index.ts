@@ -1,5 +1,5 @@
-import type { IStakingProtocol, StakeParams, SupportedChain } from "../../types";
-import { EdwinEVMWallet } from "../../edwin-core/wallets/evm_wallet";
+import type { IStakingProtocol, StakeParams, SupportedChain } from '../../types';
+import { EdwinEVMWallet } from '../../edwin-core/wallets/evm_wallet';
 
 export class LidoProtocol implements IStakingProtocol {
     private wallet: EdwinEVMWallet;
@@ -8,27 +8,27 @@ export class LidoProtocol implements IStakingProtocol {
         this.wallet = wallet;
     }
 
-    supportedChains: SupportedChain[] = ["mainnet"];
+    supportedChains: SupportedChain[] = ['mainnet'];
 
     async getPortfolio(): Promise<string> {
-        return "";
+        return '';
     }
 
     async stake(params: StakeParams): Promise<string> {
         const { chain, amount } = params;
 
-        throw new Error("Not implemented");
+        throw new Error(`Not implemented. Params: ${chain} ${amount}`);
     }
 
     async unstake(params: StakeParams): Promise<string> {
         const { chain, amount } = params;
 
-        throw new Error("Not implemented");
+        throw new Error(`Not implemented. Params: ${chain} ${amount}`);
     }
 
     async claimRewards(params: StakeParams): Promise<string> {
         const { chain } = params;
 
-        throw new Error("Not implemented");
+        throw new Error(`Not implemented. Params: ${chain}`);
     }
 }

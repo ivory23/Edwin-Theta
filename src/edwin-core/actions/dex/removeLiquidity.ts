@@ -1,6 +1,6 @@
-import { z } from "zod";
-import { Edwin } from "../../../edwin-client";
-import { EdwinAction, IDEXProtocol } from "../../../types";
+import { z } from 'zod';
+import { Edwin } from '../../../edwin-client';
+import { EdwinAction, IDEXProtocol } from '../../../types';
 
 export const removeLiquidityTemplate = `You are an AI assistant specialized in processing DeFi liquidity removal requests. Your task is to extract specific information from user messages and format it into a structured JSON response.
 
@@ -34,17 +34,17 @@ Provide the final output in JSON format:
 \`\`\`
 `;
 
-
 export class RemoveLiquidityAction implements EdwinAction {
-    name = "REMOVE_LIQUIDITY";
-    description = "Removes liquidity from a DEX pool, withdrawing the underlying tokens back to the user's wallet. Required parameters: chain (blockchain network), protocol (DEX name), address (pool address), and amount (quantity of LP tokens to remove, can be 'max' for full withdrawal)";
+    name = 'REMOVE_LIQUIDITY';
+    description =
+        "Removes liquidity from a DEX pool, withdrawing the underlying tokens back to the user's wallet. Required parameters: chain (blockchain network), protocol (DEX name), address (pool address), and amount (quantity of LP tokens to remove, can be 'max' for full withdrawal)";
     template = removeLiquidityTemplate;
     edwin: Edwin;
     schema = z.object({
         protocol: z.string(),
         chain: z.string(),
         poolAddress: z.string(),
-        amount: z.string()
+        amount: z.string(),
     });
 
     constructor(edwin: Edwin) {

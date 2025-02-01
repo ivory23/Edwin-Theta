@@ -27,7 +27,7 @@ import { Edwin, EdwinConfig } from 'edwin-sdk';
 const edwinConfig: EdwinConfig = {
     evmPrivateKey: process.env.PRIVATE_KEY,
     solanaPrivateKey: process.env.SOLANA_PRIVATE_KEY,
-    actions: ['supply', 'withdraw', 'stake']
+    actions: ['supply', 'withdraw', 'stake'],
 };
 
 // Initialize Edwin SDK
@@ -38,10 +38,9 @@ await edwin.actions.supply.execute({
     protocol: 'aave',
     chain: 'base',
     amount: '100',
-    asset: 'usdc'
+    asset: 'usdc',
 });
 ```
-
 
 ## Documentation
 

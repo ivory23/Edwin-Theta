@@ -1,8 +1,8 @@
-import { IDEXProtocol, LiquidityParams, SupportedChain } from "../../types";
-import { EdwinSolanaWallet } from "../../edwin-core/wallets/solana_wallet";
-import DLMM, { StrategyType } from "@meteora-ag/dlmm";
-import { Keypair, PublicKey, SendTransactionError } from "@solana/web3.js";
-import { BN } from "@coral-xyz/anchor";
+import { IDEXProtocol, LiquidityParams, SupportedChain } from '../../types';
+import { EdwinSolanaWallet } from '../../edwin-core/wallets/solana_wallet';
+import DLMM, { StrategyType } from '@meteora-ag/dlmm';
+import { Keypair, PublicKey, SendTransactionError } from '@solana/web3.js';
+import { BN } from '@coral-xyz/anchor';
 
 interface MeteoraPoolResult {
     pairs: MeteoraPool[];
@@ -42,29 +42,29 @@ interface Position {
 }
 
 export class MeteoraProtocol implements IDEXProtocol {
-    private static readonly BASE_URL = "https://dlmm-api.meteora.ag";
-    public supportedChains: SupportedChain[] = ["solana"];
+    private static readonly BASE_URL = 'https://dlmm-api.meteora.ag';
+    public supportedChains: SupportedChain[] = ['solana'];
 
     private wallet: EdwinSolanaWallet;
     private openPositions: Set<string>;
-    
+
     constructor(wallet: EdwinSolanaWallet) {
         this.wallet = wallet;
         this.openPositions = new Set<string>();
     }
 
     async getPortfolio(): Promise<string> {
-        return "Meteora open positions:\n" + Array.from(this.openPositions).join("\n");
+        return 'Meteora open positions:\n' + Array.from(this.openPositions).join('\n');
     }
 
     async swap(params: LiquidityParams): Promise<string> {
         const { asset, chain, amount, poolAddress } = params;
         try {
             if (!amount || !poolAddress) {
-                throw new Error("Amount and pool address are required for Meteora swap");
+                throw new Error('Amount and pool address are required for Meteora swap');
             }
-            if (chain.toLowerCase() !== "solana") {
-                throw new Error("Meteora protocol only supports Solana");
+            if (chain.toLowerCase() !== 'solana') {
+                throw new Error('Meteora protocol only supports Solana');
             }
 
             const connection = this.wallet.getConnection();
@@ -72,7 +72,9 @@ export class MeteoraProtocol implements IDEXProtocol {
 
             // Determine swap direction
             const swapYtoX = asset === dlmmPool.tokenY.publicKey.toString();
-            const swapAmount = new BN(Number(amount) * 10 ** (swapYtoX ? dlmmPool.tokenY.decimal : dlmmPool.tokenX.decimal));
+            const swapAmount = new BN(
+                Number(amount) * 10 ** (swapYtoX ? dlmmPool.tokenY.decimal : dlmmPool.tokenX.decimal)
+            );
 
             // Get swap quote
             const binArrays = await dlmmPool.getBinArrayForSwap(swapYtoX);
@@ -97,10 +99,10 @@ export class MeteoraProtocol implements IDEXProtocol {
             const prioritizedTx = await this.wallet.getIncreasedTransactionPriorityFee(connection, swapTx);
             const signature = await this.wallet.sendTransaction(connection, prioritizedTx, [this.wallet.getSigner()]);
             await this.wallet.waitForConfirmationGracefully(connection, signature);
-            
+
             return signature;
         } catch (error: unknown) {
-            console.error("Meteora swap error:", error);
+            console.error('Meteora swap error:', error);
             const message = error instanceof Error ? error.message : String(error);
             throw new Error(`Meteora swap failed: ${message}`);
         }
@@ -114,7 +116,7 @@ export class MeteoraProtocol implements IDEXProtocol {
             }
             return await response.json();
         } catch (error: unknown) {
-            console.error("Error fetching Meteora position info:", error);
+            console.error('Error fetching Meteora position info:', error);
             const message = error instanceof Error ? error.message : String(error);
             throw new Error(`Failed to get Meteora position info: ${message}`);
         }
@@ -123,9 +125,11 @@ export class MeteoraProtocol implements IDEXProtocol {
     async getPools(params: LiquidityParams, limit: number = 10): Promise<MeteoraPoolOutput[]> {
         const { asset, assetB } = params;
         if (!asset || !assetB) {
-            throw new Error("Asset A and Asset B are required for Meteora getPools");
+            throw new Error('Asset A and Asset B are required for Meteora getPools');
         }
-        const response = await fetch(`${MeteoraProtocol.BASE_URL}/pair/all_with_pagination?search_term=${asset}-${assetB}&limit=${limit}`);
+        const response = await fetch(
+            `${MeteoraProtocol.BASE_URL}/pair/all_with_pagination?search_term=${asset}-${assetB}&limit=${limit}`
+        );
         const result: MeteoraPoolResult = await response.json();
         if (!result.pairs) {
             throw new Error(`No pool found for ${asset}-${assetB}`);
@@ -142,47 +146,57 @@ export class MeteoraProtocol implements IDEXProtocol {
             fees_24h: pool.fees_24h,
             trade_volume_24h: pool.trade_volume_24h,
             current_price: pool.current_price,
-            apr_percentage: pool.apr
+            apr_percentage: pool.apr,
         }));
     }
 
     async getPositions(params: LiquidityParams): Promise<any> {
         try {
+            console.log('GetPositions params: ', params);
             const connection = this.wallet.getConnection();
             const dlmmPools = await DLMM.getAllLbPairPositionsByUser(connection, this.wallet.getPublicKey());
             return dlmmPools;
         } catch (error: unknown) {
-            console.error("Meteora getPositions error:", error);
+            console.error('Meteora getPositions error:', error);
             const message = error instanceof Error ? error.message : String(error);
             throw new Error(`Meteora getPositions failed: ${message}`);
         }
     }
 
-    private async calculateAmounts(amount: string, amountB: string, activeBinPricePerToken: string, dlmmPool: DLMM): Promise<[BN, BN]> {
+    private async calculateAmounts(
+        amount: string,
+        amountB: string,
+        activeBinPricePerToken: string,
+        dlmmPool: DLMM
+    ): Promise<[BN, BN]> {
         let totalXAmount;
         let totalYAmount;
 
-        if (amount === "auto" && amountB === "auto") {
-            throw new Error("Amount for both first asset and second asset cannot be 'auto' for Meteora liquidity provision");
+        if (amount === 'auto' && amountB === 'auto') {
+            throw new Error(
+                "Amount for both first asset and second asset cannot be 'auto' for Meteora liquidity provision"
+            );
         } else if (!amount || !amountB) {
-            throw new Error("Both amounts must be specified for Meteora liquidity provision");
+            throw new Error('Both amounts must be specified for Meteora liquidity provision');
         }
 
-        if (amount === "auto") {
+        if (amount === 'auto') {
             // Calculate amount based on amountB
             if (!isNaN(Number(amountB))) {
-                totalXAmount = new BN (Number(amountB) / Number(activeBinPricePerToken) * 10 ** (dlmmPool.tokenX.decimal));
+                totalXAmount = new BN(
+                    (Number(amountB) / Number(activeBinPricePerToken)) * 10 ** dlmmPool.tokenX.decimal
+                );
                 totalYAmount = new BN(Number(amountB) * 10 ** dlmmPool.tokenY.decimal);
             } else {
-                throw new Error("Invalid amountB value for second token for Meteora liquidity provision");
+                throw new Error('Invalid amountB value for second token for Meteora liquidity provision');
             }
-        } else if (amountB === "auto") {
+        } else if (amountB === 'auto') {
             // Calculate amountB based on amount
             if (!isNaN(Number(amount))) {
                 totalXAmount = new BN(Number(amount) * 10 ** dlmmPool.tokenX.decimal);
-                totalYAmount = new BN(Number(amount) * Number(activeBinPricePerToken) * 10 ** (dlmmPool.tokenY.decimal));
+                totalYAmount = new BN(Number(amount) * Number(activeBinPricePerToken) * 10 ** dlmmPool.tokenY.decimal);
             } else {
-                throw new Error("Invalid amount value for first token for Meteora liquidity provision");
+                throw new Error('Invalid amount value for first token for Meteora liquidity provision');
             }
         } else {
             // Both are numbers
@@ -202,13 +216,13 @@ export class MeteoraProtocol implements IDEXProtocol {
 
         try {
             if (!amount) {
-                throw new Error("Amount for Asset A is required for Meteora liquidity provision");
+                throw new Error('Amount for Asset A is required for Meteora liquidity provision');
             } else if (!amountB) {
-                throw new Error("Amount for Asset B is required for Meteora liquidity provision");
+                throw new Error('Amount for Asset B is required for Meteora liquidity provision');
             } else if (!poolAddress) {
-                throw new Error("Pool address is required for Meteora liquidity provision");
-            } else if (chain.toLowerCase() !== "solana") {
-                throw new Error("Meteora protocol only supports Solana");
+                throw new Error('Pool address is required for Meteora liquidity provision');
+            } else if (chain.toLowerCase() !== 'solana') {
+                throw new Error('Meteora protocol only supports Solana');
             }
 
             const connection = this.wallet.getConnection();
@@ -218,9 +232,14 @@ export class MeteoraProtocol implements IDEXProtocol {
             const TOTAL_RANGE_INTERVAL = 10;
             const minBinId = activeBin.binId - TOTAL_RANGE_INTERVAL;
             const maxBinId = activeBin.binId + TOTAL_RANGE_INTERVAL;
-            
+
             const activeBinPricePerToken = dlmmPool.fromPricePerLamport(Number(activeBin.price));
-            const [totalXAmount, totalYAmount] = await this.calculateAmounts(amount, amountB, activeBinPricePerToken, dlmmPool);
+            const [totalXAmount, totalYAmount] = await this.calculateAmounts(
+                amount,
+                amountB,
+                activeBinPricePerToken,
+                dlmmPool
+            );
 
             let tx;
             let newBalancePosition;
@@ -259,8 +278,8 @@ export class MeteoraProtocol implements IDEXProtocol {
 
             const prioritizedTx = await this.wallet.getIncreasedTransactionPriorityFee(connection, tx);
             const signature = await this.wallet.sendTransaction(
-                connection, 
-                prioritizedTx, 
+                connection,
+                prioritizedTx,
                 existingPosition ? [this.wallet.getSigner()] : [this.wallet.getSigner(), newBalancePosition as Keypair]
             );
             const confirmation = await this.wallet.waitForConfirmationGracefully(connection, signature);
@@ -270,11 +289,11 @@ export class MeteoraProtocol implements IDEXProtocol {
             if (newBalancePosition) {
                 this.openPositions.add(newBalancePosition.publicKey.toString());
             }
-            return "Successfully added liquidity to pool " + poolAddress + ", transaction signature: " + signature;
+            return 'Successfully added liquidity to pool ' + poolAddress + ', transaction signature: ' + signature;
         } catch (error: unknown) {
             if (error instanceof SendTransactionError) {
                 const logs = await error.getLogs(this.wallet.getConnection());
-                console.error("Transaction failed with logs:", logs);
+                console.error('Transaction failed with logs:', logs);
                 throw new Error(`Transaction failed: ${error.message}\nLogs: ${logs?.join('\n')}`);
             }
             throw error;
@@ -284,17 +303,17 @@ export class MeteoraProtocol implements IDEXProtocol {
     async removeLiquidity(params: LiquidityParams): Promise<string> {
         const { chain, poolAddress } = params;
         try {
-            if (chain !== "solana") {
-                throw new Error("Meteora protocol only supports Solana");
+            if (chain !== 'solana') {
+                throw new Error('Meteora protocol only supports Solana');
             }
             if (!poolAddress) {
-                throw new Error("Pool address is required for Meteora liquidity removal");
+                throw new Error('Pool address is required for Meteora liquidity removal');
             }
             const connection = this.wallet.getConnection();
             const dlmmPool = await DLMM.create(connection, new PublicKey(poolAddress));
             const { userPositions } = await dlmmPool.getPositionsByUserAndLbPair(this.wallet.getPublicKey());
             if (!userPositions || userPositions.length === 0) {
-                throw new Error("No positions found in this pool");
+                throw new Error('No positions found in this pool');
             }
             // Get just the first position. Can be expanded in the future
             const binData = userPositions[0].positionData.positionBinData;
@@ -305,23 +324,23 @@ export class MeteoraProtocol implements IDEXProtocol {
                 user: this.wallet.getPublicKey(),
                 binIds: binIdsToRemove,
                 bps: new BN(100 * 100), // 100%
-                shouldClaimAndClose: true
+                shouldClaimAndClose: true,
             });
 
             // Handle multiple transactions if needed
             let signature;
-            for (let tx of Array.isArray(removeLiquidityTx)
-                ? removeLiquidityTx
-                : [removeLiquidityTx]) {
+            for (let tx of Array.isArray(removeLiquidityTx) ? removeLiquidityTx : [removeLiquidityTx]) {
                 const prioritizedTx = await this.wallet.getIncreasedTransactionPriorityFee(connection, tx);
-                const signature = await this.wallet.sendTransaction(connection, prioritizedTx, [this.wallet.getSigner()]);
+                const signature = await this.wallet.sendTransaction(connection, prioritizedTx, [
+                    this.wallet.getSigner(),
+                ]);
                 await this.wallet.waitForConfirmationGracefully(connection, signature);
             }
             // Remove position from tracked open positions
             this.openPositions.delete(userPositions[0].publicKey.toString());
-            return "Successfully removed liquidity from pool " + poolAddress + ", transaction signature: " + signature;
+            return 'Successfully removed liquidity from pool ' + poolAddress + ', transaction signature: ' + signature;
         } catch (error: unknown) {
-            console.error("Meteora remove liquidity error:", error);
+            console.error('Meteora remove liquidity error:', error);
             const message = error instanceof Error ? error.message : String(error);
             throw new Error(`Meteora remove liquidity failed: ${message}`);
         }
