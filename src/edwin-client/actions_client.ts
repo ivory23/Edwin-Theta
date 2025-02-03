@@ -8,6 +8,10 @@ import {
     GetPositionsAction,
     RemoveLiquidityAction,
     SwapAction,
+    GetAgentByTwitterAction,
+    GetAgentByContractAction,
+    GetAgentsPagedAction,
+    SearchTweetsAction,
 } from '../edwin-core/actions';
 
 export const ACTION_MAP: Record<string, new (edwin: any) => EdwinAction> = {
@@ -19,6 +23,10 @@ export const ACTION_MAP: Record<string, new (edwin: any) => EdwinAction> = {
     removeLiquidity: RemoveLiquidityAction,
     getPositions: GetPositionsAction,
     swap: SwapAction,
+    getAgentByTwitter: GetAgentByTwitterAction,
+    getAgentByContract: GetAgentByContractAction,
+    getAgentsPaged: GetAgentsPagedAction,
+    searchTweets: SearchTweetsAction,
 };
 
 export type SupportedActions = keyof typeof ACTION_MAP;
