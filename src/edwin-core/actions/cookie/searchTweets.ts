@@ -49,4 +49,4 @@ export class SearchTweetsAction implements EdwinAction {
         }
         return await protocol.searchTweets(params.searchQuery, params.from, params.to);
     }
-} 
+}

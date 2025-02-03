@@ -46,4 +46,4 @@ export class GetAgentByContractAction implements EdwinAction {
         }
         return await protocol.getAgentByContract(params.contractAddress, params.interval);
     }
-} 
+}

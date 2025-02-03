@@ -11,7 +11,7 @@ import {
     GetAgentByTwitterAction,
     GetAgentByContractAction,
     GetAgentsPagedAction,
-    SearchTweetsAction 
+    SearchTweetsAction,
 } from '../edwin-core/actions';
 
 export const ACTION_MAP: Record<string, new (edwin: any) => EdwinAction> = {

@@ -49,4 +49,4 @@ export class GetAgentsPagedAction implements EdwinAction {
         }
         return await protocol.getAgentsPaged(params.interval, params.page, params.pageSize);
     }
-} 
+}

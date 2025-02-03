@@ -46,4 +46,4 @@ export class GetAgentByTwitterAction implements EdwinAction {
         }
         return await protocol.getAgentByTwitter(params.twitterUsername, params.interval);
     }
-} 
+}
