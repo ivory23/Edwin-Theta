@@ -89,6 +89,13 @@ export interface IDEXProtocol extends DeFiProtocol {
     getPositions?(params: LiquidityParams): Promise<any>;
 }
 
+export interface ICookieProtocol extends DeFiProtocol {
+    getAgentByTwitter(twitterUsername: string, interval: string): Promise<string>;
+    getAgentByContract(contractAddress: string, interval: string): Promise<string>;
+    getAgentsPaged(interval: string, page: number, pageSize: number): Promise<string>;
+    searchTweets(searchQuery: string, from: string, to: string): Promise<string>;
+}
+
 export interface EdwinAction {
     name: string;
     description: string;
