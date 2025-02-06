@@ -73,10 +73,6 @@ class CookieSwarmClient implements ICookieProtocol {
     private baseUrl: string;
     supportedChains: SupportedChain[] = ['base'];
 
-    public getPortfolio(): Promise<string> {
-        return Promise.resolve('');
-    }
-
     constructor(apiKey: string) {
         this.apiKey = apiKey;
         this.baseUrl = 'https://api.cookie.fun';

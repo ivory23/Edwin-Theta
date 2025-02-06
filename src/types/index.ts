@@ -67,18 +67,19 @@ export interface LiquidityParams extends ActionParams {
 
 export interface DeFiProtocol {
     supportedChains: SupportedChain[];
-    getPortfolio(): Promise<string>;
 }
 
 export interface ILendingProtocol extends DeFiProtocol {
     supply(params: SupplyParams): Promise<string>;
     withdraw(params: WithdrawParams): Promise<string>;
+    getPortfolio(): Promise<string>;
 }
 
 export interface IStakingProtocol extends DeFiProtocol {
     stake(params: StakeParams): Promise<string>;
     unstake(params: StakeParams): Promise<string>;
     claimRewards?(params: StakeParams): Promise<string>;
+    getPortfolio(): Promise<string>;
 }
 
 export interface IDEXProtocol extends DeFiProtocol {
@@ -88,6 +89,7 @@ export interface IDEXProtocol extends DeFiProtocol {
     getPools?(params: any): Promise<any>;
     getPositions?(params: any): Promise<any>;
     getActiveBin?(params: any): Promise<any>;
+    getPortfolio(): Promise<string>;
 }
 
 export interface ICookieProtocol extends DeFiProtocol {
@@ -95,6 +97,10 @@ export interface ICookieProtocol extends DeFiProtocol {
     getAgentByContract(contractAddress: string, interval: string): Promise<string>;
     getAgentsPaged(interval: string, page: number, pageSize: number): Promise<string>;
     searchTweets(searchQuery: string, from: string, to: string): Promise<string>;
+}
+
+export interface ISwapProtocol extends DeFiProtocol {
+    swap(params: any): Promise<string>;
 }
 
 export interface EdwinAction {

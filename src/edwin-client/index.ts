@@ -62,7 +62,7 @@ export class Edwin {
         // Get portfolio positions per each protocol
         const portfolioPromises = Object.entries(this.protocols).map(async ([name, protocol]) => {
             try {
-                const portfolio = await protocol.getPortfolio();
+                const portfolio = 'getPortfolio' in protocol ? await (protocol as any).getPortfolio() : '';
                 if (!portfolio || portfolio.length === 0) {
                     return null;
                 }
