@@ -3,6 +3,7 @@ import {
     ComputeBudgetProgram,
     Connection,
     Keypair,
+    LAMPORTS_PER_SOL,
     PublicKey,
     Transaction,
     VersionedTransaction,
@@ -41,6 +42,17 @@ export class EdwinSolanaWallet extends EdwinWallet {
 
     getSigner(): Keypair {
         return this.wallet;
+    }
+
+    async getBalance(tokenAddress?: PublicKey): Promise<number> {
+        const connection = this.getConnection();
+        if (!tokenAddress) {
+            // Get SOL balance
+            return (await connection.getBalance(this.wallet_address)) / LAMPORTS_PER_SOL;
+        }
+        // Get token balance
+        const token_account = await connection.getTokenAccountBalance(tokenAddress);
+        return token_account.value.uiAmount || 0;
     }
 
     async getPriorityFee(transaction: Transaction) {
