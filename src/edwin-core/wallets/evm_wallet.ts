@@ -70,7 +70,7 @@ export class EdwinEVMWallet extends EdwinWallet {
             throw new Error('Account not set');
         }
         // Get ETH balance
-        const balance = await client.getBalance({address: this.account.address});
+        const balance = await client.getBalance({ address: this.account.address });
         const balanceFormatted = formatUnits(balance, 18);
         const balanceNumber = Number(balanceFormatted);
         return balanceNumber;

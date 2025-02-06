@@ -8,6 +8,7 @@ import {
     Transaction,
     VersionedTransaction,
 } from '@solana/web3.js';
+import { TokenListProvider } from '@solana/spl-token-registry';
 import { EdwinWallet } from './wallet';
 
 export class EdwinSolanaWallet extends EdwinWallet {
@@ -44,15 +45,39 @@ export class EdwinSolanaWallet extends EdwinWallet {
         return this.wallet;
     }
 
-    async getBalance(tokenAddress?: PublicKey): Promise<number> {
+    async getTokenAddress(symbol: string): Promise<string | null> {
+        const tokens = await new TokenListProvider().resolve();
+        const tokenList = tokens.filterByChainId(101).getList(); // 101 = Solana mainnet
+
+        const token = tokenList.find(t => t.symbol.toLowerCase() === symbol.toLowerCase());
+        return token ? token.address : null;
+    }
+
+    async getBalance(symbol?: string): Promise<number> {
         const connection = this.getConnection();
-        if (!tokenAddress) {
+        if (!symbol) {
             // Get SOL balance
             return (await connection.getBalance(this.wallet_address)) / LAMPORTS_PER_SOL;
         }
+
         // Get token balance
-        const token_account = await connection.getTokenAccountBalance(tokenAddress);
-        return token_account.value.uiAmount || 0;
+        const tokenAddress = await this.getTokenAddress(symbol);
+        if (!tokenAddress) {
+            throw new Error(`Token ${symbol} not found`);
+        }
+        const tokenMint = new PublicKey(tokenAddress);
+        // Find all token accounts owned by this wallet
+        const tokenAccounts = await connection.getTokenAccountsByOwner(this.wallet_address, {
+            mint: tokenMint,
+        });
+        // If no token account exists, return 0 balance
+        if (tokenAccounts.value.length === 0) {
+            return 0;
+        }
+        // Get balance from the first token account
+        const tokenAccount = tokenAccounts.value[0];
+        const tokenAccountBalance = await connection.getTokenAccountBalance(tokenAccount.pubkey);
+        return tokenAccountBalance.value.uiAmount || 0;
     }
 
     async getPriorityFee(transaction: Transaction) {

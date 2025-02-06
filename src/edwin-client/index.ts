@@ -33,6 +33,22 @@ export class Edwin {
         return Object.values(this.actions);
     }
 
+    public async getBalance(wallet: string): Promise<number> {
+        wallet = wallet.toLowerCase();
+        if (!this.wallets[wallet]) {
+            throw new Error(`Wallet ${wallet} not found`);
+        }
+        return this.wallets[wallet].getBalance();
+    }
+
+    public async getBalanceOfToken(wallet: string, symbol: string): Promise<number> {
+        wallet = wallet.toLowerCase();
+        if (!this.wallets[wallet]) {
+            throw new Error(`Wallet ${wallet} not found`);
+        }
+        return (this.wallets[wallet] as EdwinSolanaWallet).getBalance(symbol);
+    }
+
     public async getPortfolio() {
         // Build wallet address section
         const walletAddresses = Object.entries(this.wallets)

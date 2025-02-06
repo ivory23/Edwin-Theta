@@ -328,6 +328,7 @@ export class MeteoraProtocol implements IDEXProtocol {
             if (!userPositions || userPositions.length === 0) {
                 throw new Error('No positions found in this pool');
             }
+            ``;
             // Get just the first position. Can be expanded in the future
             const binData = userPositions[0].positionData.positionBinData;
             const binIdsToRemove = binData.map(bin => bin.binId);
