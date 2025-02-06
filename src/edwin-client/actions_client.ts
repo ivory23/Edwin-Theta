@@ -12,6 +12,7 @@ import {
     GetAgentByContractAction,
     GetAgentsPagedAction,
     SearchTweetsAction,
+    GetActiveBinAction,
 } from '../edwin-core/actions';
 
 export const ACTION_MAP: Record<string, new (edwin: any) => EdwinAction> = {
@@ -22,6 +23,7 @@ export const ACTION_MAP: Record<string, new (edwin: any) => EdwinAction> = {
     getPools: GetPoolsAction,
     removeLiquidity: RemoveLiquidityAction,
     getPositions: GetPositionsAction,
+    getActiveBin: GetActiveBinAction,
     swap: SwapAction,
     getAgentByTwitter: GetAgentByTwitterAction,
     getAgentByContract: GetAgentByContractAction,

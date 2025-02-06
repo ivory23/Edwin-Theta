@@ -1,6 +1,6 @@
 import { IDEXProtocol, LiquidityParams, SupportedChain } from '../../types';
 import { EdwinSolanaWallet } from '../../edwin-core/wallets/solana_wallet';
-import DLMM, { StrategyType } from '@meteora-ag/dlmm';
+import DLMM, { StrategyType, BinLiquidity, PositionInfo } from '@meteora-ag/dlmm';
 import { Keypair, PublicKey, SendTransactionError } from '@solana/web3.js';
 import { BN } from '@coral-xyz/anchor';
 
@@ -154,7 +154,10 @@ export class MeteoraProtocol implements IDEXProtocol {
         try {
             console.log('GetPositions params: ', params);
             const connection = this.wallet.getConnection();
-            const dlmmPools = await DLMM.getAllLbPairPositionsByUser(connection, this.wallet.getPublicKey());
+            const dlmmPools: Map<string, PositionInfo> = await DLMM.getAllLbPairPositionsByUser(
+                connection,
+                this.wallet.getPublicKey()
+            );
             return dlmmPools;
         } catch (error: unknown) {
             console.error('Meteora getPositions error:', error);
@@ -208,6 +211,16 @@ export class MeteoraProtocol implements IDEXProtocol {
             }
         }
         return [totalXAmount, totalYAmount];
+    }
+
+    async getActiveBin(params: LiquidityParams): Promise<BinLiquidity> {
+        const { poolAddress } = params;
+        if (!poolAddress) {
+            throw new Error('Pool address is required for Meteora getActiveBin');
+        }
+        const connection = this.wallet.getConnection();
+        const dlmmPool = await DLMM.create(connection, new PublicKey(poolAddress));
+        return dlmmPool.getActiveBin();
     }
 
     async addLiquidity(params: LiquidityParams): Promise<string> {
@@ -300,8 +313,8 @@ export class MeteoraProtocol implements IDEXProtocol {
         }
     }
 
-    async removeLiquidity(params: LiquidityParams): Promise<string> {
-        const { chain, poolAddress } = params;
+    async removeLiquidity(params: any): Promise<string> {
+        const { chain, poolAddress, shouldClosePosition } = params;
         try {
             if (chain !== 'solana') {
                 throw new Error('Meteora protocol only supports Solana');
@@ -324,7 +337,7 @@ export class MeteoraProtocol implements IDEXProtocol {
                 user: this.wallet.getPublicKey(),
                 binIds: binIdsToRemove,
                 bps: new BN(100 * 100), // 100%
-                shouldClaimAndClose: true,
+                shouldClaimAndClose: shouldClosePosition,
             });
 
             // Handle multiple transactions if needed

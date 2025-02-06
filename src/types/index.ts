@@ -48,8 +48,8 @@ export interface EdwinConfig {
 export interface ActionParams {
     protocol: string;
     chain: SupportedChain;
-    amount: string;
-    asset: string;
+    amount?: string;
+    asset?: string;
     data?: string;
 }
 
@@ -60,7 +60,7 @@ export interface WithdrawParams extends ActionParams {}
 export interface StakeParams extends ActionParams {}
 
 export interface LiquidityParams extends ActionParams {
-    assetB: string;
+    assetB?: string;
     amountB?: string;
     poolAddress?: string;
 }
@@ -82,11 +82,12 @@ export interface IStakingProtocol extends DeFiProtocol {
 }
 
 export interface IDEXProtocol extends DeFiProtocol {
-    swap(params: LiquidityParams): Promise<string>;
-    addLiquidity(params: LiquidityParams): Promise<string>;
-    removeLiquidity(params: LiquidityParams): Promise<string>;
-    getPools?(params: LiquidityParams): Promise<any>;
-    getPositions?(params: LiquidityParams): Promise<any>;
+    swap(params: any): Promise<string>;
+    addLiquidity(params: any): Promise<string>;
+    removeLiquidity(params: any): Promise<string>;
+    getPools?(params: any): Promise<any>;
+    getPositions?(params: any): Promise<any>;
+    getActiveBin?(params: any): Promise<any>;
 }
 
 export interface ICookieProtocol extends DeFiProtocol {
