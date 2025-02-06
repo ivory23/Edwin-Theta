@@ -64,22 +64,16 @@ export class EdwinEVMWallet extends EdwinWallet {
         return chain;
     }
 
-    async getWalletBalance(): Promise<string | null> {
-        try {
-            const client = this.getPublicClient(this.currentChain);
-            if (!this.account.address) {
-                throw new Error('Account not set');
-            }
-            const balance = await client.getBalance({
-                address: this.account.address,
-            });
-            const balanceFormatted = formatUnits(balance, 18);
-            console.log('Wallet balance cached for chain: ', this.currentChain);
-            return balanceFormatted;
-        } catch (error) {
-            console.error('Error getting wallet balance:', error);
-            return null;
+    async getBalance(): Promise<number> {
+        const client = this.getPublicClient(this.currentChain);
+        if (!this.account.address) {
+            throw new Error('Account not set');
         }
+        // Get ETH balance
+        const balance = await client.getBalance({address: this.account.address});
+        const balanceFormatted = formatUnits(balance, 18);
+        const balanceNumber = Number(balanceFormatted);
+        return balanceNumber;
     }
 
     async getWalletBalanceForChain(chainName: SupportedEVMChain): Promise<string | null> {
