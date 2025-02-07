@@ -320,9 +320,7 @@ export class MeteoraProtocol implements IDEXProtocol {
             let signature;
             for (let tx of Array.isArray(removeLiquidityTx) ? removeLiquidityTx : [removeLiquidityTx]) {
                 // const prioritizedTx = await this.wallet.getIncreasedTransactionPriorityFee(connection, tx);
-                const signature = await this.wallet.sendTransaction(connection, tx, [
-                    this.wallet.getSigner(),
-                ]);
+                const signature = await this.wallet.sendTransaction(connection, tx, [this.wallet.getSigner()]);
                 await this.wallet.waitForConfirmationGracefully(connection, signature);
             }
             // Remove position from tracked open positions
