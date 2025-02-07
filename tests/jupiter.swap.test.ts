@@ -1,3 +1,6 @@
+import { config } from 'dotenv';
+config(); // Load test environment variables from .env file
+
 import { describe, expect, it } from 'vitest';
 import { Edwin, EdwinConfig } from '../src';
 
@@ -10,7 +13,7 @@ describe('Jupiter Swap Test', () => {
 
     it('should swap USDC to SOL and back', async () => {
         // Initial balances
-        const initialSolBalance = await edwin.getBalanceOfToken('solana', 'sol');
+        const initialSolBalance = await edwin.getBalance('solana');
         const initialUsdcBalance = await edwin.getBalanceOfToken('solana', 'usdc');
         console.log('Initial balances:');
         console.log('SOL:', initialSolBalance);
@@ -20,14 +23,14 @@ describe('Jupiter Swap Test', () => {
         const swapResult1 = await edwin.actions.swap.execute({
             protocol: 'jupiter',
             chain: 'solana',
-            tokenIn: 'usdc',
-            tokenOut: 'sol',
+            asset: 'usdc',
+            assetB: 'sol',
             amount: '1', // 1 USDC
         });
         console.log('Swap 1 (USDC -> SOL) transaction:', swapResult1);
 
         // Check balances after first swap
-        const midSolBalance = await edwin.getBalanceOfToken('solana', 'sol');
+        const midSolBalance = await edwin.getBalance('solana');
         const midUsdcBalance = await edwin.getBalanceOfToken('solana', 'usdc');
         console.log('\nBalances after first swap:');
         console.log('SOL:', midSolBalance);
@@ -36,17 +39,18 @@ describe('Jupiter Swap Test', () => {
         console.log('USDC change:', midUsdcBalance - initialUsdcBalance);
 
         // Second swap: SOL back to USDC
+        const solSwapBack = midSolBalance - initialSolBalance;
         const swapResult2 = await edwin.actions.swap.execute({
             protocol: 'jupiter',
             chain: 'solana',
-            tokenIn: 'sol',
-            tokenOut: 'usdc',
-            amount: '0.05', // Swap a smaller amount of SOL back
+            asset: 'sol',
+            assetB: 'usdc',
+            amount: solSwapBack.toString(), // Swap a smaller amount of SOL back
         });
         console.log('\nSwap 2 (SOL -> USDC) transaction:', swapResult2);
 
         // Final balances
-        const finalSolBalance = await edwin.getBalanceOfToken('solana', 'sol');
+        const finalSolBalance = await edwin.getBalance('solana');
         const finalUsdcBalance = await edwin.getBalanceOfToken('solana', 'usdc');
         console.log('\nFinal balances:');
         console.log('SOL:', finalSolBalance);

@@ -1,5 +1,5 @@
 import { ISwapProtocol, SupportedChain } from '../../types';
-import { VersionedTransaction } from '@solana/web3.js';
+import { PublicKey, VersionedTransaction } from '@solana/web3.js';
 import { EdwinSolanaWallet } from '../../edwin-core/wallets/solana_wallet';
 
 interface JupiterQuoteParams {
@@ -82,7 +82,9 @@ interface SwapResponse {
 }
 
 interface SwapParams {
-    quote: JupiterQuoteResponse;
+    asset: string;
+    assetB: string;
+    amount: string;
 }
 
 export class JupiterProtocol implements ISwapProtocol {
@@ -96,35 +98,50 @@ export class JupiterProtocol implements ISwapProtocol {
     }
 
     async swap(params: SwapParams): Promise<string> {
-        const { quote } = params;
+        const { asset, assetB, amount } = params;
+        if (!asset || !assetB || !amount) {
+            throw new Error('Invalid swap params. Need: asset, assetB, amount');
+        }
+        // 1. Get quote from Jupiter
+        const inputMint = await this.wallet.getTokenAddress(asset);
+        const outputMint = await this.wallet.getTokenAddress(assetB);
+        if (!inputMint || !outputMint) {
+            throw new Error(`Invalid asset: ${asset} or ${assetB}`);
+        }
 
-        // 1. Get serialized transaction
+        // Get token decimals and adjust amount
+        const connection = this.wallet.getConnection();
+        const mintInfo = await connection.getParsedAccountInfo(new PublicKey(inputMint));
+        if (!mintInfo.value || !('parsed' in mintInfo.value.data)) {
+            throw new Error('Could not fetch mint info');
+        }
+        const decimals = mintInfo.value.data.parsed.info.decimals;
+        const adjustedAmount = (Number(amount) * Math.pow(10, decimals)).toString();
+        // Cast adjusted amount to integer to avoid scientific notation
+        const adjustedAmountInt = BigInt(Math.floor(Number(adjustedAmount))).toString();
+        const quoteParams = { inputMint, outputMint, amount: adjustedAmountInt };
+        const quote = await this.getQuote(quoteParams);
+
+        // 2. Get serialized transaction
         const swapResponse = await this.getSerializedTransaction(quote, this.wallet.getPublicKey().toString());
 
-        // 2. Deserialize the transaction
+        // 3. Deserialize the transaction
         const transaction = VersionedTransaction.deserialize(Buffer.from(swapResponse.swapTransaction, 'base64'));
 
-        // 3. Sign the transaction
+        // 4. Sign the transaction
         this.wallet.signTransaction(transaction);
 
-        // 4. Serialize and send the transaction
+        // 5. Serialize and send the transaction
         const rawTransaction = transaction.serialize();
-        const connection = this.wallet.getConnection();
-        // 5. Send transaction with optimized parameters
+        // 6. Send transaction with optimized parameters
         const signature = await connection.sendRawTransaction(rawTransaction, {
             maxRetries: 2,
             skipPreflight: true,
         });
 
-        // 6. Wait for confirmation
-        const confirmation = await connection.confirmTransaction(signature, 'finalized');
+        // 7. Wait for confirmation
+        await this.wallet.waitForConfirmationGracefully(connection, signature);
 
-        if (confirmation.value.err) {
-            throw new Error(
-                `Transaction failed: ${JSON.stringify(confirmation.value.err)}\n` +
-                    `https://solscan.io/tx/${signature}/`
-            );
-        }
         return signature;
     }
 

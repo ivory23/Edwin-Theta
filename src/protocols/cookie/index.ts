@@ -68,7 +68,7 @@ interface GetAgentsPagedResponse {
     error: string | null;
 }
 
-class CookieSwarmClient implements ICookieProtocol {
+export class CookieSwarmClient implements ICookieProtocol {
     private apiKey: string;
     private baseUrl: string;
     supportedChains: SupportedChain[] = ['base'];
@@ -143,5 +143,3 @@ class CookieSwarmClient implements ICookieProtocol {
         return JSON.stringify(response);
     }
 }
-
-export default CookieSwarmClient;

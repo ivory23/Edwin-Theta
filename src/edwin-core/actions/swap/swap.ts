@@ -40,9 +40,9 @@ export class SwapAction implements EdwinAction {
 
         return await swapProtocol.swap({
             chain: params.chain,
+            asset: params.asset,
+            assetB: params.assetB,
             amount: params.amount,
-            tokenIn: params.tokenIn,
-            tokenOut: params.tokenOut,
         });
     }
 }
