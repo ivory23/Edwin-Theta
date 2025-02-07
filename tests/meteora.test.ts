@@ -58,7 +58,7 @@ describe('Meteora test', () => {
         expect(positions).toBeDefined();
         expect(positions.size).toBe(1);
         const positionKey = positions.keys().toArray()[0];
-        console.log('🚀 ~ it ~ positions:', safeJsonStringify(positions.get(positionKey)));
+        console.log('🚀 ~ it ~ positions:', positionKey);
     }, 120000); // 120 second timeout
 
     it('test meteora remove liquidity', async () => {
