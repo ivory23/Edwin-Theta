@@ -361,6 +361,8 @@ Fees claimed:
             if (!poolAddress) {
                 throw new Error('Pool address is required for Meteora liquidity removal');
             }
+            let shouldClaimAndClose = shouldClosePosition !== undefined ? shouldClosePosition : true;
+
             const connection = this.wallet.getConnection();
             const dlmmPool = await DLMM.create(connection, new PublicKey(poolAddress));
             const { userPositions } = await dlmmPool.getPositionsByUserAndLbPair(this.wallet.getPublicKey());
@@ -377,7 +379,7 @@ Fees claimed:
                 user: this.wallet.getPublicKey(),
                 binIds: binIdsToRemove,
                 bps: new BN(100 * 100), // 100%
-                shouldClaimAndClose: shouldClosePosition,
+                shouldClaimAndClose: shouldClaimAndClose,
             });
 
             // Handle multiple transactions if needed
