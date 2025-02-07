@@ -7,13 +7,16 @@ import {
     PublicKey,
     Transaction,
     VersionedTransaction,
+    SystemProgram,
 } from '@solana/web3.js';
 import { EdwinWallet } from './wallet';
+import { JitoJsonRpcClient } from 'jito-js-rpc';
 
 export class EdwinSolanaWallet extends EdwinWallet {
     private wallet: Keypair;
     private wallet_address: PublicKey;
-    private static readonly TRANSACTION_PRIORITY_LEVEL = 'VeryHigh';
+    // You can override this default fee (in microLamports) by setting the env variable JITO_PRIORITY_FEE
+    private static readonly DEFAULT_PRIORITY_FEE = 10_000;
 
     constructor(protected privateKey: string) {
         super();
@@ -51,37 +54,8 @@ export class EdwinSolanaWallet extends EdwinWallet {
             return (await connection.getBalance(this.wallet_address)) / LAMPORTS_PER_SOL;
         }
         // Get token balance
-        const token_account = await connection.getTokenAccountBalance(tokenAddress);
-        return token_account.value.uiAmount || 0;
-    }
-
-    async getPriorityFee(transaction: Transaction) {
-        const serializedTransaction = bs58.encode(transaction.serialize({ requireAllSignatures: false }));
-        const heliusApiKey = process.env.HELIUS_API_KEY;
-        if (!heliusApiKey) {
-            throw new Error('HELIUS_API_KEY is not set');
-        }
-        const heliusApiUrl = `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`;
-        const response = await fetch(heliusApiUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                jsonrpc: '2.0',
-                id: 1,
-                method: 'getPriorityFeeEstimate',
-                params: [
-                    {
-                        transaction: serializedTransaction,
-                        options: {
-                            priorityLevel: EdwinSolanaWallet.TRANSACTION_PRIORITY_LEVEL,
-                        },
-                    },
-                ],
-            }),
-        });
-        const data = await response.json();
-        console.log('🚀 ~ getPriorityFee ~ data:', data);
-        return Math.max(data.result.priorityFeeEstimate, 10_000);
+        const tokenAccount = await connection.getTokenAccountBalance(tokenAddress);
+        return tokenAccount.value.uiAmount || 0;
     }
 
     // Function to gracefully wait for transaction confirmation
@@ -110,54 +84,71 @@ export class EdwinSolanaWallet extends EdwinWallet {
         throw new Error('Transaction confirmation timed out');
     }
 
-    async sendTransaction(connection: Connection, transaction: Transaction, signers: Keypair[]) {
-        // Get a fresh blockhash right before sending
+    /**
+     * Sends a signed transaction using Jito's low latency transaction send API.
+     * Includes a tip to Jito validators to incentivize inclusion.
+     *
+     * This method:
+     *  1. Uses the provided connection to fetch a recent blockhash
+     *  2. Adds a tip instruction to a Jito validator
+     *  3. Signs and sends the transaction via Jito's API
+     */
+    async sendTransaction(connection: Connection, transaction: Transaction, signers: Keypair[]): Promise<string> {
+        // Initialize Jito client
+        const jitoClient = new JitoJsonRpcClient(
+            process.env.JITO_RPC_URL || 'https://mainnet.block-engine.jito.wtf/api/v1',
+            process.env.JITO_UUID
+        );
+
+        // Get a random Jito tip account
+        const jitoTipAccount = new PublicKey(await jitoClient.getRandomTipAccount());
+        const jitoTipAmount = 1000; // 0.000001 SOL tip
+
+        // Add Jito tip instruction to the transaction
+        transaction.add(
+            SystemProgram.transfer({
+                fromPubkey: this.wallet_address,
+                toPubkey: jitoTipAccount,
+                lamports: jitoTipAmount,
+            })
+        );
+
+        // Fetch a fresh blockhash
         const { blockhash } = await connection.getLatestBlockhash('finalized');
-        transaction.recentBlockhash = blockhash; // Update the blockhash
+        transaction.recentBlockhash = blockhash;
+        transaction.feePayer = this.wallet_address;
 
-        const messageV0 = transaction.compileMessage();
-        const versionedTx = new VersionedTransaction(messageV0);
-        versionedTx.sign(signers);
+        // Sign the transaction with all required signers
+        transaction.sign(...signers);
 
-        const signature = await connection.sendTransaction(versionedTx, {
-            skipPreflight: false,
-            maxRetries: 3,
-            preflightCommitment: 'confirmed',
+        // Serialize the transaction and encode it as base64
+        const serializedTx = transaction.serialize();
+        const base64Tx = Buffer.from(serializedTx).toString('base64');
+
+        // Use your Jito RPC URL (set via env variable) or default to a known endpoint
+        const jitoRpcUrl = process.env.JITO_RPC_URL || 'https://mainnet.block-engine.jito.wtf';
+        const jitoApiEndpoint = `${jitoRpcUrl}/api/v1/transactions`;
+
+        const response = await fetch(jitoApiEndpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                jsonrpc: '2.0',
+                id: 1,
+                method: 'sendTransaction',
+                params: [
+                    base64Tx,
+                    {
+                        encoding: 'base64',
+                    },
+                ],
+            }),
         });
-        return signature;
-    }
 
-    async getIncreasedTransactionPriorityFee(connection: Connection, transaction: Transaction): Promise<Transaction> {
-        // Create a new transaction and filter out any existing compute budget instructions
-        const updatedInstructions = transaction.instructions.filter(
-            ix => ix.programId.toBase58() !== ComputeBudgetProgram.programId.toBase58()
-        );
-
-        // Create a temporary transaction for priority fee estimation
-        const tempTransaction = new Transaction();
-        tempTransaction.add(...updatedInstructions);
-        tempTransaction.feePayer = this.wallet_address;
-
-        const { blockhash } = await connection.getLatestBlockhash();
-        if (!blockhash) {
-            throw new Error('Failed to get latest blockhash');
+        const data = await response.json();
+        if (data.error) {
+            throw new Error(data.error.message);
         }
-        tempTransaction.recentBlockhash = blockhash;
-
-        // Get priority fee estimate
-        const priorityFee = await this.getPriorityFee(tempTransaction);
-
-        // Create final transaction with all instructions
-        const finalTransaction = new Transaction();
-        finalTransaction.add(
-            ComputeBudgetProgram.setComputeUnitLimit({ units: 2_000_000 }),
-            ComputeBudgetProgram.setComputeUnitPrice({ microLamports: priorityFee }),
-            ...updatedInstructions
-        );
-
-        finalTransaction.feePayer = this.wallet_address;
-        finalTransaction.recentBlockhash = blockhash;
-
-        return finalTransaction;
+        return data.result; // Transaction signature returned by Jito
     }
 }

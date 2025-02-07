@@ -96,8 +96,7 @@ export class MeteoraProtocol implements IDEXProtocol {
                 minOutAmount: swapQuote.minOutAmount,
             });
 
-            const prioritizedTx = await this.wallet.getIncreasedTransactionPriorityFee(connection, swapTx);
-            const signature = await this.wallet.sendTransaction(connection, prioritizedTx, [this.wallet.getSigner()]);
+            const signature = await this.wallet.sendTransaction(connection, swapTx, [this.wallet.getSigner()]);
             await this.wallet.waitForConfirmationGracefully(connection, signature);
 
             return signature;
@@ -248,18 +247,7 @@ export class MeteoraProtocol implements IDEXProtocol {
             const { userPositions } = await dlmmPool.getPositionsByUserAndLbPair(this.wallet.getPublicKey());
             const existingPosition = userPositions?.[0];
             if (existingPosition) {
-                // Add to existing position
-                tx = await dlmmPool.addLiquidityByStrategy({
-                    positionPubKey: existingPosition.publicKey,
-                    user: this.wallet.getPublicKey(),
-                    totalXAmount,
-                    totalYAmount,
-                    strategy: {
-                        maxBinId,
-                        minBinId,
-                        strategyType: StrategyType.SpotBalanced,
-                    },
-                });
+                throw new Error('Edwin does not support adding liquidity to existing positions');
             } else {
                 // Create new position
                 newBalancePosition = Keypair.generate();
@@ -276,10 +264,9 @@ export class MeteoraProtocol implements IDEXProtocol {
                 });
             }
 
-            const prioritizedTx = await this.wallet.getIncreasedTransactionPriorityFee(connection, tx);
             const signature = await this.wallet.sendTransaction(
                 connection,
-                prioritizedTx,
+                tx,
                 existingPosition ? [this.wallet.getSigner()] : [this.wallet.getSigner(), newBalancePosition as Keypair]
             );
             const confirmation = await this.wallet.waitForConfirmationGracefully(connection, signature);
@@ -330,10 +317,7 @@ export class MeteoraProtocol implements IDEXProtocol {
             // Handle multiple transactions if needed
             let signature;
             for (let tx of Array.isArray(removeLiquidityTx) ? removeLiquidityTx : [removeLiquidityTx]) {
-                const prioritizedTx = await this.wallet.getIncreasedTransactionPriorityFee(connection, tx);
-                const signature = await this.wallet.sendTransaction(connection, prioritizedTx, [
-                    this.wallet.getSigner(),
-                ]);
+                const signature = await this.wallet.sendTransaction(connection, tx, [this.wallet.getSigner()]);
                 await this.wallet.waitForConfirmationGracefully(connection, signature);
             }
             // Remove position from tracked open positions
