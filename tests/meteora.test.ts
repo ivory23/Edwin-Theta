@@ -24,8 +24,7 @@ describe('Meteora test', () => {
 
     it('test meteora getPositions - note - need to use a paid RPC', async () => {
         const positions = await edwin.actions.getPositions.execute({
-            protocol: 'meteora',
-            chain: 'solana',
+            protocol: 'meteora',            chain: 'solana',
         });
         console.log('🚀 ~ it ~ getPositions result:', safeJsonStringify(positions));
     }, 120000); // 120 second timeout

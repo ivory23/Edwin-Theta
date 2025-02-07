@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { Edwin, EdwinConfig } from '../src';
 
-
 describe('Jupiter Swap Test', () => {
     const edwinConfig: EdwinConfig = {
         solanaPrivateKey: process.env.SOLANA_PRIVATE_KEY,

@@ -1,1 +1,1 @@
-export * from './swap';
+export { SwapAction } from './swap';
