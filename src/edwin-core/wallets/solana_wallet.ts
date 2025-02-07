@@ -151,41 +151,4 @@ export class EdwinSolanaWallet extends EdwinWallet {
         }
         return data.result; // Transaction signature returned by Jito
     }
-
-    /**
-     * Returns a new Transaction that includes ComputeBudget instructions
-     * to set a fixed priority fee for faster processing.
-     *
-     * With Jito, you no longer need to call an external service (like Helius)
-     * to get a fee estimate. Instead, we simply use a fixed fee – either from
-     * an environment variable (JITO_PRIORITY_FEE) or a default value.
-     */
-    async getIncreasedTransactionPriorityFee(connection: Connection, transaction: Transaction): Promise<Transaction> {
-        // Filter out any existing compute budget instructions
-        const updatedInstructions = transaction.instructions.filter(
-            ix => ix.programId.toBase58() !== ComputeBudgetProgram.programId.toBase58()
-        );
-
-        const { blockhash } = await connection.getLatestBlockhash('finalized');
-        if (!blockhash) {
-            throw new Error('Failed to get latest blockhash');
-        }
-
-        // Use a fixed (or environment–configured) priority fee
-        const priorityFee = process.env.JITO_PRIORITY_FEE
-            ? Number(process.env.JITO_PRIORITY_FEE)
-            : EdwinSolanaWallet.DEFAULT_PRIORITY_FEE;
-
-        // Build a new transaction with the compute budget instructions first
-        const finalTransaction = new Transaction();
-        finalTransaction.add(
-            ComputeBudgetProgram.setComputeUnitLimit({ units: 2_000_000 }),
-            ComputeBudgetProgram.setComputeUnitPrice({ microLamports: priorityFee }),
-            ...updatedInstructions
-        );
-        finalTransaction.feePayer = this.wallet_address;
-        finalTransaction.recentBlockhash = blockhash;
-
-        return finalTransaction;
-    }
 }

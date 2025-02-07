@@ -96,7 +96,6 @@ export class MeteoraProtocol implements IDEXProtocol {
                 minOutAmount: swapQuote.minOutAmount,
             });
 
-            // const prioritizedTx = await this.wallet.getIncreasedTransactionPriorityFee(connection, swapTx);
             const signature = await this.wallet.sendTransaction(connection, swapTx, [this.wallet.getSigner()]);
             await this.wallet.waitForConfirmationGracefully(connection, signature);
 
@@ -265,7 +264,6 @@ export class MeteoraProtocol implements IDEXProtocol {
                 });
             }
 
-            // const prioritizedTx = await this.wallet.getIncreasedTransactionPriorityFee(connection, tx);
             const signature = await this.wallet.sendTransaction(
                 connection,
                 tx,
@@ -319,7 +317,6 @@ export class MeteoraProtocol implements IDEXProtocol {
             // Handle multiple transactions if needed
             let signature;
             for (let tx of Array.isArray(removeLiquidityTx) ? removeLiquidityTx : [removeLiquidityTx]) {
-                // const prioritizedTx = await this.wallet.getIncreasedTransactionPriorityFee(connection, tx);
                 const signature = await this.wallet.sendTransaction(connection, tx, [this.wallet.getSigner()]);
                 await this.wallet.waitForConfirmationGracefully(connection, signature);
             }
