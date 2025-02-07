@@ -2,6 +2,7 @@ import type { DeFiProtocol, EdwinConfig } from '../types';
 import { EdwinEVMWallet, EdwinSolanaWallet, EdwinWallet } from '../edwin-core/wallets';
 import { initializeProtocols } from './protocols_client';
 import { initializeActions, ActionMap } from './actions_client';
+import edwinLogger from '../utils/logger';
 
 export { getEdwinTools } from './langchain';
 
@@ -52,7 +53,7 @@ export class Edwin {
                 }
                 return `${name.toUpperCase()} Portfolio:\n${portfolio}`;
             } catch (error) {
-                console.error(`Error getting portfolio for ${name}:`, error);
+                edwinLogger.info(`Error getting portfolio for ${name}:`, error);
                 return null;
             }
         });

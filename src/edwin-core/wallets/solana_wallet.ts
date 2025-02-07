@@ -1,6 +1,5 @@
 import bs58 from 'bs58';
 import {
-    ComputeBudgetProgram,
     Connection,
     Keypair,
     LAMPORTS_PER_SOL,
@@ -11,6 +10,7 @@ import {
 } from '@solana/web3.js';
 import { EdwinWallet } from './wallet';
 import { JitoJsonRpcClient } from 'jito-js-rpc';
+import edwinLogger from '../../utils/logger';
 
 export class EdwinSolanaWallet extends EdwinWallet {
     private wallet: Keypair;
@@ -71,7 +71,7 @@ export class EdwinSolanaWallet extends EdwinWallet {
             const { value } = await connection.getSignatureStatus(signature, {
                 searchTransactionHistory: true,
             });
-            console.log('🚀 ~ waitForConfirmationGracefully ~ value:', value);
+            edwinLogger.info('🚀 ~ waitForConfirmationGracefully ~ value:', value);
             if (value) {
                 if (value.confirmationStatus === 'confirmed' || value.confirmationStatus === 'finalized') {
                     return value; // Transaction is confirmed or finalized

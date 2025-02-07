@@ -5,6 +5,7 @@ import * as viemChains from 'viem/chains';
 import type { SupportedEVMChain } from '../../types';
 import { EdwinWallet } from './wallet';
 import { ethers, providers } from 'ethers';
+import edwinLogger from '../../utils/logger';
 
 export const _SupportedEVMChainList = Object.keys(viemChains) as Array<keyof typeof viemChains>;
 
@@ -87,7 +88,7 @@ export class EdwinEVMWallet extends EdwinWallet {
             });
             return formatUnits(balance, 18);
         } catch (error) {
-            console.error('Error getting wallet balance:', error);
+            edwinLogger.error('Error getting wallet balance:', error);
             return null;
         }
     }

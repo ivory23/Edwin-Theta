@@ -3,6 +3,7 @@ import { EdwinSolanaWallet } from '../../edwin-core/wallets/solana_wallet';
 import DLMM, { StrategyType } from '@meteora-ag/dlmm';
 import { Keypair, PublicKey, SendTransactionError } from '@solana/web3.js';
 import { BN } from '@coral-xyz/anchor';
+import edwinLogger from '../../utils/logger';
 
 interface MeteoraPoolResult {
     pairs: MeteoraPool[];
@@ -101,7 +102,7 @@ export class MeteoraProtocol implements IDEXProtocol {
 
             return signature;
         } catch (error: unknown) {
-            console.error('Meteora swap error:', error);
+            edwinLogger.error('Meteora swap error:', error);
             const message = error instanceof Error ? error.message : String(error);
             throw new Error(`Meteora swap failed: ${message}`);
         }
@@ -115,7 +116,7 @@ export class MeteoraProtocol implements IDEXProtocol {
             }
             return await response.json();
         } catch (error: unknown) {
-            console.error('Error fetching Meteora position info:', error);
+            edwinLogger.error('Error fetching Meteora position info:', error);
             const message = error instanceof Error ? error.message : String(error);
             throw new Error(`Failed to get Meteora position info: ${message}`);
         }
@@ -151,12 +152,12 @@ export class MeteoraProtocol implements IDEXProtocol {
 
     async getPositions(params: LiquidityParams): Promise<any> {
         try {
-            console.log('GetPositions params: ', params);
+            edwinLogger.info('GetPositions params: ', params);
             const connection = this.wallet.getConnection();
             const dlmmPools = await DLMM.getAllLbPairPositionsByUser(connection, this.wallet.getPublicKey());
             return dlmmPools;
         } catch (error: unknown) {
-            console.error('Meteora getPositions error:', error);
+            edwinLogger.error('Meteora getPositions error:', error);
             const message = error instanceof Error ? error.message : String(error);
             throw new Error(`Meteora getPositions failed: ${message}`);
         }
@@ -211,7 +212,9 @@ export class MeteoraProtocol implements IDEXProtocol {
 
     async addLiquidity(params: LiquidityParams): Promise<string> {
         const { chain, amount, amountB, poolAddress } = params;
-        console.log(`Calling Meteora protocol to add liquidity to pool ${poolAddress} with ${amount} and ${amountB}`);
+        edwinLogger.info(
+            `Calling Meteora protocol to add liquidity to pool ${poolAddress} with ${amount} and ${amountB}`
+        );
 
         try {
             if (!amount) {
@@ -280,7 +283,7 @@ export class MeteoraProtocol implements IDEXProtocol {
         } catch (error: unknown) {
             if (error instanceof SendTransactionError) {
                 const logs = await error.getLogs(this.wallet.getConnection());
-                console.error('Transaction failed with logs:', logs);
+                edwinLogger.error('Transaction failed with logs:', logs);
                 throw new Error(`Transaction failed: ${error.message}\nLogs: ${logs?.join('\n')}`);
             }
             throw error;
@@ -316,7 +319,7 @@ export class MeteoraProtocol implements IDEXProtocol {
 
             // Handle multiple transactions if needed
             let signature;
-            for (let tx of Array.isArray(removeLiquidityTx) ? removeLiquidityTx : [removeLiquidityTx]) {
+            for (const tx of Array.isArray(removeLiquidityTx) ? removeLiquidityTx : [removeLiquidityTx]) {
                 const signature = await this.wallet.sendTransaction(connection, tx, [this.wallet.getSigner()]);
                 await this.wallet.waitForConfirmationGracefully(connection, signature);
             }
@@ -324,7 +327,7 @@ export class MeteoraProtocol implements IDEXProtocol {
             this.openPositions.delete(userPositions[0].publicKey.toString());
             return 'Successfully removed liquidity from pool ' + poolAddress + ', transaction signature: ' + signature;
         } catch (error: unknown) {
-            console.error('Meteora remove liquidity error:', error);
+            edwinLogger.error('Meteora remove liquidity error:', error);
             const message = error instanceof Error ? error.message : String(error);
             throw new Error(`Meteora remove liquidity failed: ${message}`);
         }

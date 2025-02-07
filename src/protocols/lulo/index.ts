@@ -1,6 +1,7 @@
 import { VersionedTransaction } from '@solana/web3.js';
 import { ILendingProtocol, SupplyParams, SupportedChain, WithdrawParams } from '../../types';
 import { EdwinSolanaWallet } from '../../edwin-core/wallets/solana_wallet';
+import edwinLogger from '../../utils/logger';
 
 export class LuloProtocol implements ILendingProtocol {
     public supportedChains: SupportedChain[] = ['solana'];
@@ -32,7 +33,7 @@ export class LuloProtocol implements ILendingProtocol {
                     depositAmount: params.amount.toString(),
                 }),
             });
-            console.log(response);
+            edwinLogger.info(response);
             const {
                 data: { transactionMeta },
             } = await response.json();

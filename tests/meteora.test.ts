@@ -4,6 +4,7 @@ config(); // Load test environment variables from .env file
 import { describe, expect, it } from 'vitest';
 import { Edwin, EdwinConfig } from '../src';
 import { safeJsonStringify } from '../src/utils';
+import edwinLogger from '../src/utils/logger';
 
 // Meteora test
 describe('Meteora test', () => {
@@ -19,7 +20,7 @@ describe('Meteora test', () => {
             assetB: 'usdc',
             protocol: 'meteora',
         });
-        console.log('🚀 ~ it ~ getPools result:', results);
+        edwinLogger.info('🚀 ~ it ~ getPools result:', results);
     }, 30000); // 30 second timeout
 
     it('test meteora getPositions - note - need to use a paid RPC', async () => {
@@ -27,7 +28,7 @@ describe('Meteora test', () => {
             protocol: 'meteora',
             chain: 'solana',
         });
-        console.log('🚀 ~ it ~ getPositions result:', safeJsonStringify(positions));
+        edwinLogger.info('🚀 ~ it ~ getPositions result:', safeJsonStringify(positions));
     }, 120000); // 120 second timeout
 
     it('test meteora create position and add liquidity, then check for new position', async () => {
@@ -36,7 +37,7 @@ describe('Meteora test', () => {
             assetB: 'usdc',
             protocol: 'meteora',
         });
-        console.log('🚀 ~ it ~ result:', results);
+        edwinLogger.info('🚀 ~ it ~ result:', results);
         const topPoolAddress = results[0].address;
 
         const result = await edwin.actions.addLiquidity.execute({
@@ -46,20 +47,20 @@ describe('Meteora test', () => {
             protocol: 'meteora',
             chain: 'solana',
         });
-        console.log('🚀 ~ it ~ result:', result);
+        edwinLogger.info('🚀 ~ it ~ result:', result);
 
         // Get positions after adding liquidity
         const positions = await edwin.actions.getPositions.execute({
             protocol: 'meteora',
             chain: 'solana',
         });
-        console.log('🚀 ~ it ~ positions:', positions);
+        edwinLogger.info('🚀 ~ it ~ positions:', positions);
 
         // Check that positions is ok - should be 1 position
         expect(positions).toBeDefined();
         expect(positions.size).toBe(1);
         const positionKey = positions.keys().toArray()[0];
-        console.log('🚀 ~ it ~ positions:', positionKey);
+        edwinLogger.info('🚀 ~ it ~ positions:', positionKey);
     }, 120000); // 120 second timeout
 
     it('test meteora remove liquidity', async () => {
@@ -68,7 +69,7 @@ describe('Meteora test', () => {
             protocol: 'meteora',
             chain: 'solana',
         });
-        console.log('🚀 ~ it ~ initial positions:', positions);
+        edwinLogger.info('🚀 ~ it ~ initial positions:', positions);
 
         if (!positions || positions.size === 0) {
             return it.skip('No positions found to close - skipping test');
@@ -81,14 +82,14 @@ describe('Meteora test', () => {
             chain: 'solana',
             poolAddress: poolAddress,
         });
-        console.log('🚀 ~ it ~ removeLiquidity result:', result);
+        edwinLogger.info('🚀 ~ it ~ removeLiquidity result:', result);
 
         // Check positions after removal
         const positionsAfter = await edwin.actions.getPositions.execute({
             protocol: 'meteora',
             chain: 'solana',
         });
-        console.log('🚀 ~ it ~ positions after removal:', positionsAfter);
+        edwinLogger.info('🚀 ~ it ~ positions after removal:', positionsAfter);
 
         // Verify position was closed
         expect(positionsAfter.size).toBe(positions.size - 1);

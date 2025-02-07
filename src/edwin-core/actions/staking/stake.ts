@@ -25,7 +25,7 @@ export class StakeAction implements EdwinAction {
     }
 
     async execute(params: StakeParams): Promise<string> {
-        console.log(`Staking: ${params.amount} ${params.asset} on ${params.chain})`);
+        edwinLogger.info(`Staking: ${params.amount} ${params.asset} on ${params.chain})`);
 
         throw new Error('Not implemented');
     }

@@ -50,30 +50,30 @@ export class AaveProtocol implements ILendingProtocol {
 
     async supply(params: SupplyParams): Promise<string> {
         const { chain, amount, asset } = params;
-        console.log(`Calling the inner AAVE logic to supply ${amount} ${asset}`);
+        edwinLogger.info(`Calling the inner AAVE logic to supply ${amount} ${asset}`);
 
         try {
             const aaveChain = this.getAaveChain(chain);
             this.wallet.switchChain(aaveChain);
-            console.log(`Switched to chain: ${chain}`);
+            edwinLogger.info(`Switched to chain: ${chain}`);
             const walletClient = this.wallet.getWalletClient(aaveChain);
-            console.log(`Got wallet client for chain: ${chain}`);
+            edwinLogger.info(`Got wallet client for chain: ${chain}`);
 
             // Log the RPC URL from the transport
-            console.log(`Transport RPC URL: ${walletClient.transport.url}`);
+            edwinLogger.info(`Transport RPC URL: ${walletClient.transport.url}`);
             const provider = new providers.JsonRpcProvider(walletClient.transport.url);
-            console.log(`Created ethers provider`);
+            edwinLogger.info(`Created ethers provider`);
 
             const ethers_wallet = this.wallet.getEthersWallet(walletClient, provider);
             ethers_wallet.connect(provider);
-            console.log(`Created ethers wallet`);
+            edwinLogger.info(`Created ethers wallet`);
 
             const pool = new Pool(ethers_wallet.provider, {
                 POOL: AaveV3Base.POOL,
                 WETH_GATEWAY: AaveV3Base.WETH_GATEWAY,
             });
             // todo extend to more chains
-            console.log(`Initialized Aave Pool with contract: ${AaveV3Base.POOL}`);
+            edwinLogger.info(`Initialized Aave Pool with contract: ${AaveV3Base.POOL}`);
 
             // Get the reserve address for the input asset
             const assetKey = Object.keys(AaveV3Base.ASSETS).find(key => key.toLowerCase() === asset.toLowerCase());
@@ -91,7 +91,7 @@ export class AaveProtocol implements ILendingProtocol {
                 throw new Error(`Unsupported asset: ${asset}`);
             }
 
-            console.log(`Reserve: ${reserve}`);
+            edwinLogger.info(`Reserve: ${reserve}`);
             // Prepare supply parameters
             const supplyParams = {
                 user: walletClient.account?.address as string,
@@ -99,20 +99,20 @@ export class AaveProtocol implements ILendingProtocol {
                 amount: amount,
             };
 
-            console.log(`Prepared supply params:`, supplyParams);
+            edwinLogger.info(`Prepared supply params:`, supplyParams);
 
             // Get supply transaction
             const txs = await pool.supply(supplyParams);
 
-            console.log(`Generated ${txs.length} supply transaction(s)`);
+            edwinLogger.info(`Generated ${txs.length} supply transaction(s)`);
 
             // Send some example read transaction to assert the provider and the connection
             const balance = await provider.getBalance(walletClient.account?.address as string);
-            console.log(`Balance: ${balance}`);
+            edwinLogger.info(`Balance: ${balance}`);
 
             // Submit the transactions
             if (txs && txs.length > 0) {
-                console.log(`Submitting supply transactions`);
+                edwinLogger.info(`Submitting supply transactions`);
                 const results = [];
                 for (const tx of txs) {
                     const result = await this.submitTransaction(ethers_wallet.provider, ethers_wallet, tx);
@@ -132,7 +132,7 @@ export class AaveProtocol implements ILendingProtocol {
                 throw new Error('No transaction generated from Aave Pool');
             }
         } catch (error: unknown) {
-            console.error('Aave supply error:', error);
+            edwinLogger.error('Aave supply error:', error);
             const message = error instanceof Error ? error.message : String(error);
             throw new Error(`Aave supply failed: ${message}`);
         }
@@ -140,11 +140,11 @@ export class AaveProtocol implements ILendingProtocol {
 
     async withdraw(params: WithdrawParams): Promise<string> {
         const { amount, asset } = params;
-        console.log(`Calling the inner AAVE logic to withdraw ${amount} ${asset}`);
+        edwinLogger.info(`Calling the inner AAVE logic to withdraw ${amount} ${asset}`);
         try {
             throw new Error('Not implemented');
         } catch (error: unknown) {
-            console.error('Aave withdraw error:', error);
+            edwinLogger.error('Aave withdraw error:', error);
             const message = error instanceof Error ? error.message : String(error);
             throw new Error(`Aave withdraw failed: ${message}`);
         }
