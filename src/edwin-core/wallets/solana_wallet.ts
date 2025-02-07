@@ -1,6 +1,5 @@
 import bs58 from 'bs58';
 import {
-    ComputeBudgetProgram,
     Connection,
     Keypair,
     LAMPORTS_PER_SOL,

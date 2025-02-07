@@ -263,7 +263,7 @@ export class MeteoraProtocol implements IDEXProtocol {
                 const TOTAL_RANGE_INTERVAL = 10;
                 const minBinId = activeBin.binId - TOTAL_RANGE_INTERVAL;
                 const maxBinId = activeBin.binId + TOTAL_RANGE_INTERVAL;
-                
+
                 tx = await dlmmPool.initializePositionAndAddLiquidityByStrategy({
                     positionPubKey: newBalancePosition.publicKey,
                     user: this.wallet.getPublicKey(),
@@ -304,12 +304,12 @@ export class MeteoraProtocol implements IDEXProtocol {
         if (chain !== 'solana') {
             throw new Error('Meteora protocol only supports Solana');
         }
-        
+
         try {
             const connection = this.wallet.getConnection();
             const dlmmPool = await DLMM.create(connection, new PublicKey(poolAddress));
             const { userPositions } = await dlmmPool.getPositionsByUserAndLbPair(this.wallet.getPublicKey());
-            
+
             if (!userPositions || userPositions.length === 0) {
                 throw new Error('No positions found in this pool');
             }
@@ -320,31 +320,32 @@ export class MeteoraProtocol implements IDEXProtocol {
             console.log('\nFees before claiming:');
             console.log('Token X fees:', positionBefore.feeX.toString());
             console.log('Token Y fees:', positionBefore.feeY.toString());
-            
+
             // Create claim fee transaction
             const claimFeeTx = await dlmmPool.claimSwapFee({
                 owner: this.wallet.getPublicKey(),
-                position: position
+                position: position,
             });
 
             // Send and confirm transaction
             const signature = await this.wallet.sendTransaction(connection, claimFeeTx, [this.wallet.getSigner()]);
             await this.wallet.waitForConfirmationGracefully(connection, signature);
-            
+
             // Get updated position data after claiming
-            const { userPositions: updatedPositions } = await dlmmPool.getPositionsByUserAndLbPair(this.wallet.getPublicKey());
+            const { userPositions: updatedPositions } = await dlmmPool.getPositionsByUserAndLbPair(
+                this.wallet.getPublicKey()
+            );
             const updatedPosition = updatedPositions[0].positionData;
-            
+
             console.log('\nFees after claiming:');
             console.log('Token X fees:', updatedPosition.feeX.toString());
             console.log('Token Y fees:', updatedPosition.feeY.toString());
-   
+
             return `Successfully claimed fees from pool ${poolAddress}
 Transaction signature: ${signature}
 Fees claimed:
 - Token X: ${positionBefore.feeX.sub(updatedPosition.feeX).toString()}
 - Token Y: ${positionBefore.feeY.sub(updatedPosition.feeY).toString()}`;
-
         } catch (error: unknown) {
             console.error('Meteora claim fees error:', error);
             const message = error instanceof Error ? error.message : String(error);
