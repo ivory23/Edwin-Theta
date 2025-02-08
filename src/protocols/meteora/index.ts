@@ -199,9 +199,6 @@ export class MeteoraProtocol implements IDEXProtocol {
                 dlmmPool
             );
 
-            console.log('totalXAmount', totalXAmount.toString());
-            console.log('totalYAmount', totalYAmount.toString());
-
             let tx;
             let newBalancePosition;
 
