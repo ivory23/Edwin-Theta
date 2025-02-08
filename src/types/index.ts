@@ -100,7 +100,7 @@ export interface ICookieProtocol extends DeFiProtocol {
 }
 
 export interface ISwapProtocol extends DeFiProtocol {
-    swap(params: any): Promise<string>;
+    swap(params: any): Promise<number>;
 }
 
 export interface EdwinAction {

@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { Edwin } from '../../../edwin-client';
-import { EdwinAction, IDEXProtocol, ISwapProtocol } from '../../../types';
+import { EdwinAction, ISwapProtocol } from '../../../types';
 
 export class SwapAction implements EdwinAction {
     name = 'SWAP';
@@ -19,7 +19,7 @@ export class SwapAction implements EdwinAction {
         this.edwin = edwin;
     }
 
-    async execute(params: any): Promise<string> {
+    async execute(params: any): Promise<number> {
         const protocol = this.edwin.protocols[params.protocol.toLowerCase()];
 
         if (!protocol) {
@@ -31,7 +31,7 @@ export class SwapAction implements EdwinAction {
             throw new Error(`Protocol ${params.protocol} does not support swapping`);
         }
 
-        const swapProtocol = protocol as IDEXProtocol | ISwapProtocol;
+        const swapProtocol = protocol as ISwapProtocol;
 
         // Validate chain is supported
         if (!swapProtocol.supportedChains.includes(params.chain)) {

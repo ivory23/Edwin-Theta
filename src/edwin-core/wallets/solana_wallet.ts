@@ -97,6 +97,11 @@ export class EdwinSolanaWallet extends EdwinWallet {
             });
             console.log('🚀 ~ waitForConfirmationGracefully ~ value:', value);
             if (value) {
+                // Check for transaction error
+                if (value.err) {
+                    throw new Error(`Transaction failed: ${JSON.stringify(value.err)}`);
+                }
+
                 if (value.confirmationStatus === 'confirmed' || value.confirmationStatus === 'finalized') {
                     return value; // Transaction is confirmed or finalized
                 }
