@@ -27,7 +27,7 @@ describe('Jupiter Swap Test', () => {
             assetB: 'sol',
             amount: '1', // 1 USDC
         });
-        console.log('Swap 1 (USDC -> SOL) transaction:', swapResult1);
+        console.log('Swap 1 (USDC -> SOL) output amount:', swapResult1);
 
         // Check balances after first swap
         const midSolBalance = await edwin.getBalance('solana');
@@ -39,7 +39,7 @@ describe('Jupiter Swap Test', () => {
         console.log('USDC change:', midUsdcBalance - initialUsdcBalance);
 
         // Second swap: SOL back to USDC
-        const solSwapBack = midSolBalance - initialSolBalance;
+        const solSwapBack = swapResult1;
         const swapResult2 = await edwin.actions.swap.execute({
             protocol: 'jupiter',
             chain: 'solana',
@@ -47,7 +47,7 @@ describe('Jupiter Swap Test', () => {
             assetB: 'usdc',
             amount: solSwapBack.toString(), // Swap a smaller amount of SOL back
         });
-        console.log('\nSwap 2 (SOL -> USDC) transaction:', swapResult2);
+        console.log('\nSwap 2 (SOL -> USDC) output amount:', swapResult2);
 
         // Final balances
         const finalSolBalance = await edwin.getBalance('solana');
@@ -61,7 +61,7 @@ describe('Jupiter Swap Test', () => {
         // Verify the swaps were successful
         expect(swapResult1).toBeDefined();
         expect(swapResult2).toBeDefined();
-        expect(typeof swapResult1).toBe('string');
-        expect(typeof swapResult2).toBe('string');
+        expect(typeof swapResult1).toBe('number');
+        expect(typeof swapResult2).toBe('number');
     }, 60000); // 60 second timeout
 });

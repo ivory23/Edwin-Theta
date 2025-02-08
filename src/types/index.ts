@@ -83,7 +83,7 @@ export interface IStakingProtocol extends DeFiProtocol {
 }
 
 export interface IDEXProtocol extends DeFiProtocol {
-    swap(params: any): Promise<string>;
+    swap?(params: any): Promise<number>;
     addLiquidity(params: any): Promise<string>;
     removeLiquidity(params: any): Promise<string>;
     getPools?(params: any): Promise<any>;

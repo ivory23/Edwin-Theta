@@ -1,5 +1,13 @@
 import { DeFiProtocol } from '../types';
-import { AaveProtocol, LidoProtocol, LuloProtocol, MeteoraProtocol, UniswapProtocol, JupiterProtocol, CookieSwarmClient } from '../protocols';
+import {
+    AaveProtocol,
+    LidoProtocol,
+    LuloProtocol,
+    MeteoraProtocol,
+    UniswapProtocol,
+    JupiterProtocol,
+    CookieSwarmClient,
+} from '../protocols';
 import { EdwinEVMWallet, EdwinSolanaWallet } from '../edwin-core/wallets';
 
 export function initializeProtocols(

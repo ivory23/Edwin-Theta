@@ -57,56 +57,6 @@ export class MeteoraProtocol implements IDEXProtocol {
         return 'Meteora open positions:\n' + Array.from(this.openPositions).join('\n');
     }
 
-    async swap(params: LiquidityParams): Promise<string> {
-        const { asset, chain, amount, poolAddress } = params;
-        try {
-            if (!amount || !poolAddress) {
-                throw new Error('Amount and pool address are required for Meteora swap');
-            }
-            if (chain.toLowerCase() !== 'solana') {
-                throw new Error('Meteora protocol only supports Solana');
-            }
-
-            const connection = this.wallet.getConnection();
-            const dlmmPool = await DLMM.create(connection, new PublicKey(poolAddress));
-
-            // Determine swap direction
-            const swapYtoX = asset === dlmmPool.tokenY.publicKey.toString();
-            const swapAmount = new BN(
-                Number(amount) * 10 ** (swapYtoX ? dlmmPool.tokenY.decimal : dlmmPool.tokenX.decimal)
-            );
-
-            // Get swap quote
-            const binArrays = await dlmmPool.getBinArrayForSwap(swapYtoX);
-            const swapQuote = await dlmmPool.swapQuote(
-                swapAmount,
-                swapYtoX,
-                new BN(10), // slippage tolerance
-                binArrays
-            );
-
-            // Execute swap
-            const swapTx = await dlmmPool.swap({
-                inToken: dlmmPool.tokenX.publicKey,
-                outToken: dlmmPool.tokenY.publicKey,
-                binArraysPubkey: swapQuote.binArraysPubkey,
-                inAmount: swapAmount,
-                lbPair: dlmmPool.pubkey,
-                user: this.wallet.getPublicKey(),
-                minOutAmount: swapQuote.minOutAmount,
-            });
-
-            const signature = await this.wallet.sendTransaction(connection, swapTx, [this.wallet.getSigner()]);
-            await this.wallet.waitForConfirmationGracefully(connection, signature);
-
-            return signature;
-        } catch (error: unknown) {
-            console.error('Meteora swap error:', error);
-            const message = error instanceof Error ? error.message : String(error);
-            throw new Error(`Meteora swap failed: ${message}`);
-        }
-    }
-
     async getPositionInfo(positionAddress: string): Promise<Position> {
         try {
             const response = await fetch(`https://dlmm-api.meteora.ag/position_v2/${positionAddress}`);
@@ -249,6 +199,9 @@ export class MeteoraProtocol implements IDEXProtocol {
                 dlmmPool
             );
 
+            console.log('totalXAmount', totalXAmount.toString());
+            console.log('totalYAmount', totalYAmount.toString());
+
             let tx;
             let newBalancePosition;
 
@@ -272,7 +225,7 @@ export class MeteoraProtocol implements IDEXProtocol {
                     strategy: {
                         maxBinId,
                         minBinId,
-                        strategyType: StrategyType.SpotBalanced,
+                        strategyType: StrategyType.SpotImBalanced,
                     },
                 });
             }
