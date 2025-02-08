@@ -33,6 +33,22 @@ export class Edwin {
         return Object.values(this.actions);
     }
 
+    public async getBalance(wallet: string): Promise<number> {
+        wallet = wallet.toLowerCase();
+        if (!this.wallets[wallet]) {
+            throw new Error(`Wallet ${wallet} not found`);
+        }
+        return this.wallets[wallet].getBalance();
+    }
+
+    public async getBalanceOfToken(wallet: string, symbol: string): Promise<number> {
+        wallet = wallet.toLowerCase();
+        if (!this.wallets[wallet]) {
+            throw new Error(`Wallet ${wallet} not found`);
+        }
+        return (this.wallets[wallet] as EdwinSolanaWallet).getBalance(symbol);
+    }
+
     public async getPortfolio() {
         // Build wallet address section
         const walletAddresses = Object.entries(this.wallets)
@@ -46,7 +62,7 @@ export class Edwin {
         // Get portfolio positions per each protocol
         const portfolioPromises = Object.entries(this.protocols).map(async ([name, protocol]) => {
             try {
-                const portfolio = await protocol.getPortfolio();
+                const portfolio = 'getPortfolio' in protocol ? await (protocol as any).getPortfolio() : '';
                 if (!portfolio || portfolio.length === 0) {
                     return null;
                 }

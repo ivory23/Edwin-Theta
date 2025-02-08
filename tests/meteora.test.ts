@@ -80,6 +80,7 @@ describe('Meteora test', () => {
             protocol: 'meteora',
             chain: 'solana',
             poolAddress: poolAddress,
+            shouldClosePosition: true,
         });
         console.log('🚀 ~ it ~ removeLiquidity result:', result);
 

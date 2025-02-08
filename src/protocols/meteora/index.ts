@@ -1,6 +1,6 @@
 import { IDEXProtocol, LiquidityParams, SupportedChain } from '../../types';
 import { EdwinSolanaWallet } from '../../edwin-core/wallets/solana_wallet';
-import DLMM, { StrategyType } from '@meteora-ag/dlmm';
+import DLMM, { StrategyType, BinLiquidity, PositionInfo, PositionData } from '@meteora-ag/dlmm';
 import { Keypair, PublicKey, SendTransactionError } from '@solana/web3.js';
 import { BN } from '@coral-xyz/anchor';
 
@@ -57,56 +57,6 @@ export class MeteoraProtocol implements IDEXProtocol {
         return 'Meteora open positions:\n' + Array.from(this.openPositions).join('\n');
     }
 
-    async swap(params: LiquidityParams): Promise<string> {
-        const { asset, chain, amount, poolAddress } = params;
-        try {
-            if (!amount || !poolAddress) {
-                throw new Error('Amount and pool address are required for Meteora swap');
-            }
-            if (chain.toLowerCase() !== 'solana') {
-                throw new Error('Meteora protocol only supports Solana');
-            }
-
-            const connection = this.wallet.getConnection();
-            const dlmmPool = await DLMM.create(connection, new PublicKey(poolAddress));
-
-            // Determine swap direction
-            const swapYtoX = asset === dlmmPool.tokenY.publicKey.toString();
-            const swapAmount = new BN(
-                Number(amount) * 10 ** (swapYtoX ? dlmmPool.tokenY.decimal : dlmmPool.tokenX.decimal)
-            );
-
-            // Get swap quote
-            const binArrays = await dlmmPool.getBinArrayForSwap(swapYtoX);
-            const swapQuote = await dlmmPool.swapQuote(
-                swapAmount,
-                swapYtoX,
-                new BN(10), // slippage tolerance
-                binArrays
-            );
-
-            // Execute swap
-            const swapTx = await dlmmPool.swap({
-                inToken: dlmmPool.tokenX.publicKey,
-                outToken: dlmmPool.tokenY.publicKey,
-                binArraysPubkey: swapQuote.binArraysPubkey,
-                inAmount: swapAmount,
-                lbPair: dlmmPool.pubkey,
-                user: this.wallet.getPublicKey(),
-                minOutAmount: swapQuote.minOutAmount,
-            });
-
-            const signature = await this.wallet.sendTransaction(connection, swapTx, [this.wallet.getSigner()]);
-            await this.wallet.waitForConfirmationGracefully(connection, signature);
-
-            return signature;
-        } catch (error: unknown) {
-            console.error('Meteora swap error:', error);
-            const message = error instanceof Error ? error.message : String(error);
-            throw new Error(`Meteora swap failed: ${message}`);
-        }
-    }
-
     async getPositionInfo(positionAddress: string): Promise<Position> {
         try {
             const response = await fetch(`https://dlmm-api.meteora.ag/position_v2/${positionAddress}`);
@@ -153,7 +103,10 @@ export class MeteoraProtocol implements IDEXProtocol {
         try {
             console.log('GetPositions params: ', params);
             const connection = this.wallet.getConnection();
-            const dlmmPools = await DLMM.getAllLbPairPositionsByUser(connection, this.wallet.getPublicKey());
+            const dlmmPools: Map<string, PositionInfo> = await DLMM.getAllLbPairPositionsByUser(
+                connection,
+                this.wallet.getPublicKey()
+            );
             return dlmmPools;
         } catch (error: unknown) {
             console.error('Meteora getPositions error:', error);
@@ -209,6 +162,16 @@ export class MeteoraProtocol implements IDEXProtocol {
         return [totalXAmount, totalYAmount];
     }
 
+    async getActiveBin(params: LiquidityParams): Promise<BinLiquidity> {
+        const { poolAddress } = params;
+        if (!poolAddress) {
+            throw new Error('Pool address is required for Meteora getActiveBin');
+        }
+        const connection = this.wallet.getConnection();
+        const dlmmPool = await DLMM.create(connection, new PublicKey(poolAddress));
+        return dlmmPool.getActiveBin();
+    }
+
     async addLiquidity(params: LiquidityParams): Promise<string> {
         const { chain, amount, amountB, poolAddress } = params;
         console.log(`Calling Meteora protocol to add liquidity to pool ${poolAddress} with ${amount} and ${amountB}`);
@@ -228,10 +191,6 @@ export class MeteoraProtocol implements IDEXProtocol {
             const dlmmPool = await DLMM.create(connection, new PublicKey(poolAddress));
 
             const activeBin = await dlmmPool.getActiveBin();
-            const TOTAL_RANGE_INTERVAL = 10;
-            const minBinId = activeBin.binId - TOTAL_RANGE_INTERVAL;
-            const maxBinId = activeBin.binId + TOTAL_RANGE_INTERVAL;
-
             const activeBinPricePerToken = dlmmPool.fromPricePerLamport(Number(activeBin.price));
             const [totalXAmount, totalYAmount] = await this.calculateAmounts(
                 amount,
@@ -239,6 +198,9 @@ export class MeteoraProtocol implements IDEXProtocol {
                 activeBinPricePerToken,
                 dlmmPool
             );
+
+            console.log('totalXAmount', totalXAmount.toString());
+            console.log('totalYAmount', totalYAmount.toString());
 
             let tx;
             let newBalancePosition;
@@ -251,6 +213,10 @@ export class MeteoraProtocol implements IDEXProtocol {
             } else {
                 // Create new position
                 newBalancePosition = Keypair.generate();
+                const TOTAL_RANGE_INTERVAL = 10;
+                const minBinId = activeBin.binId - TOTAL_RANGE_INTERVAL;
+                const maxBinId = activeBin.binId + TOTAL_RANGE_INTERVAL;
+
                 tx = await dlmmPool.initializePositionAndAddLiquidityByStrategy({
                     positionPubKey: newBalancePosition.publicKey,
                     user: this.wallet.getPublicKey(),
@@ -259,7 +225,7 @@ export class MeteoraProtocol implements IDEXProtocol {
                     strategy: {
                         maxBinId,
                         minBinId,
-                        strategyType: StrategyType.SpotBalanced,
+                        strategyType: StrategyType.SpotImBalanced,
                     },
                 });
             }
@@ -286,9 +252,62 @@ export class MeteoraProtocol implements IDEXProtocol {
             throw error;
         }
     }
-
-    async removeLiquidity(params: LiquidityParams): Promise<string> {
+    async claimFees(params: any): Promise<string> {
         const { chain, poolAddress } = params;
+        if (chain !== 'solana') {
+            throw new Error('Meteora protocol only supports Solana');
+        }
+
+        try {
+            const connection = this.wallet.getConnection();
+            const dlmmPool = await DLMM.create(connection, new PublicKey(poolAddress));
+            const { userPositions } = await dlmmPool.getPositionsByUserAndLbPair(this.wallet.getPublicKey());
+
+            if (!userPositions || userPositions.length === 0) {
+                throw new Error('No positions found in this pool');
+            }
+
+            // Get the first position's data and log fees before claiming
+            const position = userPositions[0];
+            const positionBefore: PositionData = position.positionData;
+            console.log('\nFees before claiming:');
+            console.log('Token X fees:', positionBefore.feeX.toString());
+            console.log('Token Y fees:', positionBefore.feeY.toString());
+
+            // Create claim fee transaction
+            const claimFeeTx = await dlmmPool.claimSwapFee({
+                owner: this.wallet.getPublicKey(),
+                position: position,
+            });
+
+            // Send and confirm transaction
+            const signature = await this.wallet.sendTransaction(connection, claimFeeTx, [this.wallet.getSigner()]);
+            await this.wallet.waitForConfirmationGracefully(connection, signature);
+
+            // Get updated position data after claiming
+            const { userPositions: updatedPositions } = await dlmmPool.getPositionsByUserAndLbPair(
+                this.wallet.getPublicKey()
+            );
+            const updatedPosition = updatedPositions[0].positionData;
+
+            console.log('\nFees after claiming:');
+            console.log('Token X fees:', updatedPosition.feeX.toString());
+            console.log('Token Y fees:', updatedPosition.feeY.toString());
+
+            return `Successfully claimed fees from pool ${poolAddress}
+Transaction signature: ${signature}
+Fees claimed:
+- Token X: ${positionBefore.feeX.sub(updatedPosition.feeX).toString()}
+- Token Y: ${positionBefore.feeY.sub(updatedPosition.feeY).toString()}`;
+        } catch (error: unknown) {
+            console.error('Meteora claim fees error:', error);
+            const message = error instanceof Error ? error.message : String(error);
+            throw new Error(`Meteora claim fees failed: ${message}`);
+        }
+    }
+
+    async removeLiquidity(params: any): Promise<string> {
+        const { chain, poolAddress, shouldClosePosition } = params;
         try {
             if (chain !== 'solana') {
                 throw new Error('Meteora protocol only supports Solana');
@@ -296,12 +315,15 @@ export class MeteoraProtocol implements IDEXProtocol {
             if (!poolAddress) {
                 throw new Error('Pool address is required for Meteora liquidity removal');
             }
+            let shouldClaimAndClose = shouldClosePosition !== undefined ? shouldClosePosition : true;
+
             const connection = this.wallet.getConnection();
             const dlmmPool = await DLMM.create(connection, new PublicKey(poolAddress));
             const { userPositions } = await dlmmPool.getPositionsByUserAndLbPair(this.wallet.getPublicKey());
             if (!userPositions || userPositions.length === 0) {
                 throw new Error('No positions found in this pool');
             }
+            ``;
             // Get just the first position. Can be expanded in the future
             const binData = userPositions[0].positionData.positionBinData;
             const binIdsToRemove = binData.map(bin => bin.binId);
@@ -311,7 +333,7 @@ export class MeteoraProtocol implements IDEXProtocol {
                 user: this.wallet.getPublicKey(),
                 binIds: binIdsToRemove,
                 bps: new BN(100 * 100), // 100%
-                shouldClaimAndClose: true,
+                shouldClaimAndClose: shouldClaimAndClose,
             });
 
             // Handle multiple transactions if needed
