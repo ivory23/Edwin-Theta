@@ -213,11 +213,11 @@ export class MeteoraProtocol implements IDEXProtocol {
             } else {
                 // Create new position
                 newBalancePosition = Keypair.generate();
-                const TOTAL_RANGE_INTERVAL = process.env.METEORA_TOTAL_RANGE_INTERVAL
+                const rangeInterval = process.env.METEORA_TOTAL_RANGE_INTERVAL
                     ? Number(process.env.METEORA_TOTAL_RANGE_INTERVAL)
                     : 10;
-                const minBinId = activeBin.binId - TOTAL_RANGE_INTERVAL;
-                const maxBinId = activeBin.binId + TOTAL_RANGE_INTERVAL;
+                const minBinId = activeBin.binId - rangeInterval;
+                const maxBinId = activeBin.binId + rangeInterval;
 
                 tx = await dlmmPool.initializePositionAndAddLiquidityByStrategy({
                     positionPubKey: newBalancePosition.publicKey,
