@@ -1,5 +1,5 @@
 import { ISwapProtocol, SupportedChain } from '../../types';
-import { PublicKey, VersionedTransaction, LAMPORTS_PER_SOL } from '@solana/web3.js';
+import { PublicKey, VersionedTransaction } from '@solana/web3.js';
 import { EdwinSolanaWallet } from '../../edwin-core/wallets/solana_wallet';
 
 interface JupiterQuoteParams {
@@ -152,34 +152,7 @@ export class JupiterProtocol implements ISwapProtocol {
             throw new Error('Could not fetch transaction details');
         }
 
-        // Check if the output asset is SOL. This check may vary depending on your wallet's representation.
-        if (assetB.toLowerCase() === 'sol') {
-            // SOL changes are reflected in lamport balances.
-            const accountKeys = txInfo.transaction.message.accountKeys;
-            const walletIndex = accountKeys.findIndex(key => key.pubkey.toString() === this.wallet.getAddress());
-            if (walletIndex === -1) {
-                throw new Error('Wallet not found in transaction account keys');
-            }
-            // The difference in lamports includes the fee deduction. Add back the fee
-            // to get the total SOL credited from the swap.
-            const preLamports = txInfo.meta.preBalances[walletIndex];
-            const postLamports = txInfo.meta.postBalances[walletIndex];
-            const fee = txInfo.meta.fee; // fee is in lamports
-            const lamportsReceived = postLamports - preLamports + fee;
-            actualOutputAmount = lamportsReceived / LAMPORTS_PER_SOL;
-        } else {
-            // For SPL tokens, use token balance changes in the transaction metadata.
-            const preTokenBalances = txInfo.meta.preTokenBalances || [];
-            const postTokenBalances = txInfo.meta.postTokenBalances || [];
-            // Helper function: find the token balance entry for the wallet & token mint.
-            const findBalance = (balances: any[]) =>
-                balances.find(balance => balance.owner === this.wallet.getAddress() && balance.mint === outputMint);
-            const preBalanceEntry = findBalance(preTokenBalances);
-            const postBalanceEntry = findBalance(postTokenBalances);
-            const preBalance = preBalanceEntry ? preBalanceEntry.uiTokenAmount.uiAmount : 0;
-            const postBalance = postBalanceEntry ? postBalanceEntry.uiTokenAmount.uiAmount : 0;
-            actualOutputAmount = postBalance - preBalance;
-        }
+        actualOutputAmount = await this.wallet.getTransactionTokenBalanceChange(signature, assetB);
         return actualOutputAmount;
     }
 

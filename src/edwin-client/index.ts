@@ -49,6 +49,10 @@ export class Edwin {
         return (this.wallets[wallet] as EdwinSolanaWallet).getBalance(symbol);
     }
 
+    public async getTokenAddress(symbol: string): Promise<string | null> {
+        return (this.wallets['solana'] as EdwinSolanaWallet).getTokenAddress(symbol);
+    }
+
     public async getPortfolio() {
         // Build wallet address section
         const walletAddresses = Object.entries(this.wallets)
