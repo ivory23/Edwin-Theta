@@ -213,7 +213,9 @@ export class MeteoraProtocol implements IDEXProtocol {
             } else {
                 // Create new position
                 newBalancePosition = Keypair.generate();
-                const TOTAL_RANGE_INTERVAL = 10;
+                const TOTAL_RANGE_INTERVAL = process.env.METEORA_TOTAL_RANGE_INTERVAL
+                    ? Number(process.env.METEORA_TOTAL_RANGE_INTERVAL)
+                    : 10;
                 const minBinId = activeBin.binId - TOTAL_RANGE_INTERVAL;
                 const maxBinId = activeBin.binId + TOTAL_RANGE_INTERVAL;
 
@@ -286,7 +288,6 @@ export class MeteoraProtocol implements IDEXProtocol {
                 this.wallet.getPublicKey()
             );
             const updatedPosition = updatedPositions[0].positionData;
-
 
             return `Successfully claimed fees from pool ${poolAddress}
 Transaction signature: ${signature}
