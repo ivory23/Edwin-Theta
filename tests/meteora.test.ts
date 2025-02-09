@@ -4,6 +4,7 @@ config(); // Load test environment variables from .env file
 import { describe, expect, it } from 'vitest';
 import { Edwin, EdwinConfig } from '../src';
 import { safeJsonStringify } from '../src/utils';
+import { MeteoraProtocol } from '../src/protocols';
 
 // Meteora test
 describe('Meteora test', () => {
@@ -21,6 +22,25 @@ describe('Meteora test', () => {
         });
         console.log('🚀 ~ it ~ getPools result:', results);
     }, 30000); // 30 second timeout
+
+    // Test extractBalanceChanges for transaction signature y496Xe9J4P1i1EAJA1Kuvm6ndzCVWNPW12Tw5eN8QC2RUR1FrorG1YYg4XRM1dqMEYjDPw15Zryq75St7hwy1T3
+    it('test meteora extractBalanceChanges', async () => {
+        const tokenXMint = await edwin.getTokenAddress('sol');
+        const tokenYMint = await edwin.getTokenAddress('usdc');
+        if (!tokenXMint || !tokenYMint) {
+            throw new Error('Token address not found');
+        }
+        const result = await (edwin.protocols.meteora as MeteoraProtocol).extractBalanceChanges(
+            'y496Xe9J4P1i1EAJA1Kuvm6ndzCVWNPW12Tw5eN8QC2RUR1FrorG1YYg4XRM1dqMEYjDPw15Zryq75St7hwy1T3',
+            tokenXMint,
+            tokenYMint
+        );
+        console.log('🚀 ~ it ~ result:', result);
+        expect(result).toEqual({
+            liquidityRemoved: [0.004645062, 2.922796],
+            feesClaimed: [0.000002349, 0.00067],
+        });
+    }, 60000); // 60 second timeout
 
     it('test meteora getPositions - note - need to use a paid RPC', async () => {
         const positions = await edwin.actions.getPositions.execute({

@@ -303,7 +303,7 @@ Fees claimed:
         }
     }
 
-    async removeLiquidity(params: any): Promise<string> {
+    async removeLiquidity(params: any): Promise<{ liquidityRemoved: [number, number]; feesClaimed: [number, number] }> {
         const { chain, poolAddress, shouldClosePosition } = params;
         try {
             if (chain !== 'solana') {
@@ -334,18 +334,110 @@ Fees claimed:
             });
 
             // Handle multiple transactions if needed
-            let signature;
+            // Sum the total liquidity and fees claimed per token
+            const tokenXAddress = dlmmPool.tokenX.publicKey.toString();
+            const tokenYAddress = dlmmPool.tokenY.publicKey.toString();
+
+            let liquidityRemoved: [number, number] = [0, 0];
+            let feesClaimed: [number, number] = [0, 0];
+
             for (let tx of Array.isArray(removeLiquidityTx) ? removeLiquidityTx : [removeLiquidityTx]) {
                 const signature = await this.wallet.sendTransaction(connection, tx, [this.wallet.getSigner()]);
                 await this.wallet.waitForConfirmationGracefully(connection, signature);
+                const balanceChanges = await this.extractBalanceChanges(signature, tokenXAddress, tokenYAddress);
+                liquidityRemoved[0] += balanceChanges.liquidityRemoved[0];
+                liquidityRemoved[1] += balanceChanges.liquidityRemoved[1];
+                feesClaimed[0] += balanceChanges.feesClaimed[0];
+                feesClaimed[1] += balanceChanges.feesClaimed[1];
             }
             // Remove position from tracked open positions
             this.openPositions.delete(userPositions[0].publicKey.toString());
-            return 'Successfully removed liquidity from pool ' + poolAddress + ', transaction signature: ' + signature;
+            return { liquidityRemoved, feesClaimed };
         } catch (error: unknown) {
             console.error('Meteora remove liquidity error:', error);
             const message = error instanceof Error ? error.message : String(error);
             throw new Error(`Meteora remove liquidity failed: ${message}`);
         }
+    }
+
+    async extractBalanceChanges(
+        signature: string,
+        tokenXAddress: string,
+        tokenYAddress: string
+    ): Promise<{ liquidityRemoved: [number, number]; feesClaimed: [number, number] }> {
+        const METEORA_DLMM_PROGRAM_ID = 'LBUZKhRxPF3XUpBCjp4YzTKgLccjZhTSDM9YuVaPwxo';
+
+        const connection = this.wallet.getConnection();
+        // Fetch the parsed transaction details.
+        // const txInfo = await connection.getTransaction(signature, { enc: 0 });
+        const txInfo = await connection.getParsedTransaction(signature, { maxSupportedTransactionVersion: 0 });
+
+        if (!txInfo || !txInfo.meta) {
+            throw new Error('Transaction details not found or not parsed');
+        }
+
+        // The outer instructions (the main instructions submitted in the transaction)
+        const outerInstructions = txInfo.transaction.message.instructions;
+        // The inner instructions are grouped by the outer instruction index they belong to.
+        const innerInstructions = txInfo.meta.innerInstructions || [];
+
+        // Build a map from outer instruction index to the array of inner instructions.
+        // (Not every outer instruction will have inner instructions.)
+        const innerMap: Record<number, any[]> = {};
+        for (const inner of innerInstructions) {
+            // inner.index tells you the outer instruction index that spawned these inner instructions.
+            innerMap[inner.index] = inner.instructions;
+        }
+
+        // Identify which outer instructions come from the Meteora DLMM program.
+        // (There could be other instructions as well.)
+        const meteoraInstructionIndices: number[] = [];
+        outerInstructions.forEach((ix: any, index: number) => {
+            // When using jsonParsed encoding, programId is a string.
+            if (ix.programId == METEORA_DLMM_PROGRAM_ID) {
+                meteoraInstructionIndices.push(index);
+            }
+        });
+
+        if (meteoraInstructionIndices.length < 2) {
+            throw new Error('Expected at least two Meteora instructions in the transaction');
+        }
+
+        // We assume that:
+        //   • The first Meteora instruction (by order) is RemoveLiquidityByRange.
+        //   • The second is ClaimFee.
+        const removeLiquidityIndex = meteoraInstructionIndices[0];
+        const claimFeeIndex = meteoraInstructionIndices[1];
+
+        // Helper: From a list of inner instructions, pick out any SPL Token transfer instructions.
+        const decodeTokenTransfers = (instructions: any[]): any[] => {
+            const transfers = [];
+            for (const ix of instructions) {
+                if (ix.program === 'spl-token' && ix.parsed && ix.parsed.type === 'transferChecked') {
+                    transfers.push(ix.parsed.info);
+                }
+            }
+            return transfers;
+        };
+
+        // For each Meteora outer instruction we care about, get the inner instructions (if any)
+        // and decode any token transfers.
+        const removeLiquidityTransfers = innerMap[removeLiquidityIndex]
+            ? decodeTokenTransfers(innerMap[removeLiquidityIndex])
+            : [];
+        const claimFeeTransfers = innerMap[claimFeeIndex] ? decodeTokenTransfers(innerMap[claimFeeIndex]) : [];
+
+        const liquidityRemovedA = removeLiquidityTransfers.find(transfer => transfer.mint == tokenXAddress)?.tokenAmount
+            .uiAmount;
+        const liquidityRemovedB = removeLiquidityTransfers.find(transfer => transfer.mint == tokenYAddress)?.tokenAmount
+            .uiAmount;
+
+        const feesClaimedA = claimFeeTransfers.find(transfer => transfer.mint == tokenXAddress)?.tokenAmount.uiAmount;
+        const feesClaimedB = claimFeeTransfers.find(transfer => transfer.mint == tokenYAddress)?.tokenAmount.uiAmount;
+
+        return {
+            liquidityRemoved: [liquidityRemovedA, liquidityRemovedB],
+            feesClaimed: [feesClaimedA, feesClaimedB],
+        };
     }
 }

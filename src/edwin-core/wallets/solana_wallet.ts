@@ -180,4 +180,49 @@ export class EdwinSolanaWallet extends EdwinWallet {
         }
         return data.result; // Transaction signature returned by Jito
     }
+
+    async getTransactionTokenBalanceChange(signature: string, asset: string) {
+        //    - For SOL, check lamport balance changes (and add back the fee).
+        //    - For SPL tokens, check the token account balance changes.
+        let actualOutputAmount: number;
+        const mint = await this.getTokenAddress(asset);
+        if (!mint) {
+            throw new Error(`Token ${asset} not found`);
+        }
+        const connection = this.getConnection();
+        // Fetch the parsed transaction details (make sure to set the proper options)
+        const txInfo = await connection.getParsedTransaction(signature, { maxSupportedTransactionVersion: 0 });
+        if (!txInfo || !txInfo.meta) {
+            throw new Error('Could not fetch transaction details');
+        }
+        // Check if the output asset is SOL. This check may vary depending on your wallet's representation.
+        if (asset.toLowerCase() === 'sol') {
+            // SOL changes are reflected in lamport balances.
+            const accountKeys = txInfo.transaction.message.accountKeys;
+            const walletIndex = accountKeys.findIndex(key => key.pubkey.toString() === this.getAddress());
+            if (walletIndex === -1) {
+                throw new Error('Wallet not found in transaction account keys');
+            }
+            // The difference in lamports includes the fee deduction. Add back the fee
+            // to get the total SOL credited from the swap.
+            const preLamports = txInfo.meta.preBalances[walletIndex];
+            const postLamports = txInfo.meta.postBalances[walletIndex];
+            const fee = txInfo.meta.fee; // fee is in lamports
+            const lamportsReceived = postLamports - preLamports + fee;
+            actualOutputAmount = lamportsReceived / LAMPORTS_PER_SOL;
+        } else {
+            // For SPL tokens, use token balance changes in the transaction metadata.
+            const preTokenBalances = txInfo.meta.preTokenBalances || [];
+            const postTokenBalances = txInfo.meta.postTokenBalances || [];
+            // Helper function: find the token balance entry for the wallet & token mint.
+            const findBalance = (balances: any[]) =>
+                balances.find(balance => balance.owner === this.getAddress() && balance.mint === mint);
+            const preBalanceEntry = findBalance(preTokenBalances);
+            const postBalanceEntry = findBalance(postTokenBalances);
+            const preBalance = preBalanceEntry ? preBalanceEntry.uiTokenAmount.uiAmount : 0;
+            const postBalance = postBalanceEntry ? postBalanceEntry.uiTokenAmount.uiAmount : 0;
+            actualOutputAmount = postBalance - preBalance;
+        }
+        return actualOutputAmount;
+    }
 }
