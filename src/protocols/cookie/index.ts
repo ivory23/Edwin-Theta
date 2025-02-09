@@ -1,4 +1,5 @@
 import { ICookieProtocol, SupportedChain } from '../../types/index';
+import edwinLogger from '../../utils/logger';
 
 interface AgentResponse {
     ok: {
@@ -87,7 +88,7 @@ export class CookieSwarmClient implements ICookieProtocol {
         });
 
         if (!response.ok) {
-            console.error('API Error:', {
+            edwinLogger.error('API Error:', {
                 status: response.status,
                 statusText: response.statusText,
                 url: response.url,

@@ -11,6 +11,7 @@ import {
 import { TokenListProvider } from '@solana/spl-token-registry';
 import { EdwinWallet } from './wallet';
 import { JitoJsonRpcClient } from 'jito-js-rpc';
+import edwinLogger from '../../utils/logger';
 
 export class EdwinSolanaWallet extends EdwinWallet {
     private wallet: Keypair;
@@ -95,7 +96,7 @@ export class EdwinSolanaWallet extends EdwinWallet {
             const { value } = await connection.getSignatureStatus(signature, {
                 searchTransactionHistory: true,
             });
-            console.log('🚀 ~ waitForConfirmationGracefully ~ value:', value);
+            edwinLogger.info('🚀 ~ waitForConfirmationGracefully ~ value:', value);
             if (value) {
                 // Check for transaction error
                 if (value.err) {

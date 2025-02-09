@@ -1,6 +1,7 @@
 import type { WithdrawParams, EdwinAction, ILendingProtocol } from '../../../types';
 import { Edwin } from '../../../edwin-client';
 import { z } from 'zod';
+import edwinLogger from '../../../utils/logger';
 
 export const withdrawTemplate = `You are an AI assistant specialized in processing DeFi withdraw requests from lending protocols. Your task is to extract specific information from user messages and format it into a structured JSON response.
 
@@ -61,7 +62,7 @@ export class WithdrawAction implements EdwinAction {
     }
 
     async execute(params: WithdrawParams): Promise<string> {
-        console.log(`Withdrawing: ${params.amount} ${params.asset} from ${params.protocol} on ${params.chain})`);
+        edwinLogger.info(`Withdrawing: ${params.amount} ${params.asset} from ${params.protocol} on ${params.chain})`);
         try {
             // Get the appropriate protocol service based on the protocol name
             const lendingProtocol = this.edwin.protocols[params.protocol.toLowerCase()] as ILendingProtocol;
