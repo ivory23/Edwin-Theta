@@ -213,9 +213,7 @@ export class MeteoraProtocol implements IDEXProtocol {
             } else {
                 // Create new position
                 newBalancePosition = Keypair.generate();
-                const rangeInterval = process.env.METEORA_TOTAL_RANGE_INTERVAL
-                    ? Number(process.env.METEORA_TOTAL_RANGE_INTERVAL)
-                    : 10;
+                const rangeInterval = Number(process.env.METEORA_TOTAL_RANGE_INTERVAL) || 10;
                 const minBinId = activeBin.binId - rangeInterval;
                 const maxBinId = activeBin.binId + rangeInterval;
 
