@@ -33,8 +33,6 @@ export class GetPositionsAction implements EdwinAction {
     schema = z.object({
         protocol: z.string(),
         chain: z.string(),
-        asset: z.string(),
-        assetB: z.string(),
     });
 
     constructor(edwin: Edwin) {

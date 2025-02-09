@@ -48,8 +48,8 @@ export interface EdwinConfig {
 export interface ActionParams {
     protocol: string;
     chain: SupportedChain;
-    amount: string;
-    asset: string;
+    amount?: string;
+    asset?: string;
     data?: string;
 }
 
@@ -60,33 +60,36 @@ export interface WithdrawParams extends ActionParams {}
 export interface StakeParams extends ActionParams {}
 
 export interface LiquidityParams extends ActionParams {
-    assetB: string;
+    assetB?: string;
     amountB?: string;
     poolAddress?: string;
 }
 
 export interface DeFiProtocol {
     supportedChains: SupportedChain[];
-    getPortfolio(): Promise<string>;
 }
 
 export interface ILendingProtocol extends DeFiProtocol {
     supply(params: SupplyParams): Promise<string>;
     withdraw(params: WithdrawParams): Promise<string>;
+    getPortfolio(): Promise<string>;
 }
 
 export interface IStakingProtocol extends DeFiProtocol {
     stake(params: StakeParams): Promise<string>;
     unstake(params: StakeParams): Promise<string>;
     claimRewards?(params: StakeParams): Promise<string>;
+    getPortfolio(): Promise<string>;
 }
 
 export interface IDEXProtocol extends DeFiProtocol {
-    swap(params: LiquidityParams): Promise<string>;
-    addLiquidity(params: LiquidityParams): Promise<string>;
-    removeLiquidity(params: LiquidityParams): Promise<string>;
-    getPools?(params: LiquidityParams): Promise<any>;
-    getPositions?(params: LiquidityParams): Promise<any>;
+    swap?(params: any): Promise<number>;
+    addLiquidity(params: any): Promise<string>;
+    removeLiquidity(params: any): Promise<{ liquidityRemoved: [number, number]; feesClaimed: [number, number] }>;
+    getPools?(params: any): Promise<any>;
+    getPositions?(params: any): Promise<any>;
+    getActiveBin?(params: any): Promise<any>;
+    getPortfolio(): Promise<string>;
 }
 
 export interface ICookieProtocol extends DeFiProtocol {
@@ -94,6 +97,10 @@ export interface ICookieProtocol extends DeFiProtocol {
     getAgentByContract(contractAddress: string, interval: string): Promise<string>;
     getAgentsPaged(interval: string, page: number, pageSize: number): Promise<string>;
     searchTweets(searchQuery: string, from: string, to: string): Promise<string>;
+}
+
+export interface ISwapProtocol extends DeFiProtocol {
+    swap(params: any): Promise<number>;
 }
 
 export interface EdwinAction {

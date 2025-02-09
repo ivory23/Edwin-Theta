@@ -51,7 +51,12 @@ export class AaveProtocol implements ILendingProtocol {
     async supply(params: SupplyParams): Promise<string> {
         const { chain, amount, asset } = params;
         edwinLogger.info(`Calling the inner AAVE logic to supply ${amount} ${asset}`);
-
+        if (!asset) {
+            throw new Error('Asset is required');
+        }
+        if (!amount) {
+            throw new Error('Amount is required');
+        }
         try {
             const aaveChain = this.getAaveChain(chain);
             this.wallet.switchChain(aaveChain);

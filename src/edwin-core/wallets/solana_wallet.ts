@@ -8,6 +8,7 @@ import {
     VersionedTransaction,
     SystemProgram,
 } from '@solana/web3.js';
+import { TokenListProvider } from '@solana/spl-token-registry';
 import { EdwinWallet } from './wallet';
 import { JitoJsonRpcClient } from 'jito-js-rpc';
 import edwinLogger from '../../utils/logger';
@@ -47,15 +48,39 @@ export class EdwinSolanaWallet extends EdwinWallet {
         return this.wallet;
     }
 
-    async getBalance(tokenAddress?: PublicKey): Promise<number> {
+    async getTokenAddress(symbol: string): Promise<string | null> {
+        const tokens = await new TokenListProvider().resolve();
+        const tokenList = tokens.filterByChainId(101).getList(); // 101 = Solana mainnet
+
+        const token = tokenList.find((t: any) => t.symbol.toLowerCase() === symbol.toLowerCase());
+        return token ? token.address : null;
+    }
+
+    async getBalance(symbol?: string): Promise<number> {
         const connection = this.getConnection();
-        if (!tokenAddress) {
+        if (!symbol) {
             // Get SOL balance
             return (await connection.getBalance(this.wallet_address)) / LAMPORTS_PER_SOL;
         }
+
         // Get token balance
-        const tokenAccount = await connection.getTokenAccountBalance(tokenAddress);
-        return tokenAccount.value.uiAmount || 0;
+        const tokenAddress = await this.getTokenAddress(symbol);
+        if (!tokenAddress) {
+            throw new Error(`Token ${symbol} not found`);
+        }
+        const tokenMint = new PublicKey(tokenAddress);
+        // Find all token accounts owned by this wallet
+        const tokenAccounts = await connection.getTokenAccountsByOwner(this.wallet_address, {
+            mint: tokenMint,
+        });
+        // If no token account exists, return 0 balance
+        if (tokenAccounts.value.length === 0) {
+            return 0;
+        }
+        // Get balance from the first token account
+        const tokenAccount = tokenAccounts.value[0];
+        const tokenAccountBalance = await connection.getTokenAccountBalance(tokenAccount.pubkey);
+        return tokenAccountBalance.value.uiAmount || 0;
     }
 
     // Function to gracefully wait for transaction confirmation
@@ -73,6 +98,11 @@ export class EdwinSolanaWallet extends EdwinWallet {
             });
             edwinLogger.info('🚀 ~ waitForConfirmationGracefully ~ value:', value);
             if (value) {
+                // Check for transaction error
+                if (value.err) {
+                    throw new Error(`Transaction failed: ${JSON.stringify(value.err)}`);
+                }
+
                 if (value.confirmationStatus === 'confirmed' || value.confirmationStatus === 'finalized') {
                     return value; // Transaction is confirmed or finalized
                 }
@@ -150,5 +180,50 @@ export class EdwinSolanaWallet extends EdwinWallet {
             throw new Error(data.error.message);
         }
         return data.result; // Transaction signature returned by Jito
+    }
+
+    async getTransactionTokenBalanceChange(signature: string, asset: string) {
+        //    - For SOL, check lamport balance changes (and add back the fee).
+        //    - For SPL tokens, check the token account balance changes.
+        let actualOutputAmount: number;
+        const mint = await this.getTokenAddress(asset);
+        if (!mint) {
+            throw new Error(`Token ${asset} not found`);
+        }
+        const connection = this.getConnection();
+        // Fetch the parsed transaction details (make sure to set the proper options)
+        const txInfo = await connection.getParsedTransaction(signature, { maxSupportedTransactionVersion: 0 });
+        if (!txInfo || !txInfo.meta) {
+            throw new Error('Could not fetch transaction details');
+        }
+        // Check if the output asset is SOL. This check may vary depending on your wallet's representation.
+        if (asset.toLowerCase() === 'sol') {
+            // SOL changes are reflected in lamport balances.
+            const accountKeys = txInfo.transaction.message.accountKeys;
+            const walletIndex = accountKeys.findIndex(key => key.pubkey.toString() === this.getAddress());
+            if (walletIndex === -1) {
+                throw new Error('Wallet not found in transaction account keys');
+            }
+            // The difference in lamports includes the fee deduction. Add back the fee
+            // to get the total SOL credited from the swap.
+            const preLamports = txInfo.meta.preBalances[walletIndex];
+            const postLamports = txInfo.meta.postBalances[walletIndex];
+            const fee = txInfo.meta.fee; // fee is in lamports
+            const lamportsReceived = postLamports - preLamports + fee;
+            actualOutputAmount = lamportsReceived / LAMPORTS_PER_SOL;
+        } else {
+            // For SPL tokens, use token balance changes in the transaction metadata.
+            const preTokenBalances = txInfo.meta.preTokenBalances || [];
+            const postTokenBalances = txInfo.meta.postTokenBalances || [];
+            // Helper function: find the token balance entry for the wallet & token mint.
+            const findBalance = (balances: any[]) =>
+                balances.find(balance => balance.owner === this.getAddress() && balance.mint === mint);
+            const preBalanceEntry = findBalance(preTokenBalances);
+            const postBalanceEntry = findBalance(postTokenBalances);
+            const preBalance = preBalanceEntry ? preBalanceEntry.uiTokenAmount.uiAmount : 0;
+            const postBalance = postBalanceEntry ? postBalanceEntry.uiTokenAmount.uiAmount : 0;
+            actualOutputAmount = postBalance - preBalance;
+        }
+        return actualOutputAmount;
     }
 }
