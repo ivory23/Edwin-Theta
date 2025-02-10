@@ -104,8 +104,8 @@ export async function extractBalanceChanges(
     const liquidityRemovedB =
         removeLiquidityTransfers.find(transfer => transfer.mint == tokenYAddress)?.tokenAmount.uiAmount || 0;
 
-    const feesClaimedA = claimFeeTransfers.find(transfer => transfer.mint == tokenXAddress)?.tokenAmount.uiAmount;
-    const feesClaimedB = claimFeeTransfers.find(transfer => transfer.mint == tokenYAddress)?.tokenAmount.uiAmount;
+    const feesClaimedA = claimFeeTransfers.find(transfer => transfer.mint == tokenXAddress)?.tokenAmount.uiAmount || 0;
+    const feesClaimedB = claimFeeTransfers.find(transfer => transfer.mint == tokenYAddress)?.tokenAmount.uiAmount || 0;
 
     return {
         liquidityRemoved: [liquidityRemovedA, liquidityRemovedB],
