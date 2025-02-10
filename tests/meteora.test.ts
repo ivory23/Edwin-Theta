@@ -8,6 +8,7 @@ import edwinLogger from '../src/utils/logger';
 import { calculateAmounts, extractBalanceChanges } from '../src/protocols/meteora/utils';
 import DLMM from '@meteora-ag/dlmm';
 import { BN } from '@coral-xyz/anchor';
+import { EdwinSolanaWallet } from '../src/edwin-core/wallets/solana_wallet/solana_wallet';
 
 // Meteora test
 describe('Meteora test', () => {
@@ -111,20 +112,20 @@ describe('Meteora utils', () => {
         // Mock DLMM instance
         const mockDlmmPool = {
             tokenX: { decimal: 9 },
-            tokenY: { decimal: 6 }
+            tokenY: { decimal: 6 },
         } as DLMM;
 
         it('should calculate amounts when amount is auto', async () => {
             const result = await calculateAmounts(
                 'auto',
                 '100',
-                '2',  // price per token
+                '2', // price per token
                 mockDlmmPool
             );
 
             expect(result[0]).toBeInstanceOf(BN);
             expect(result[1]).toBeInstanceOf(BN);
-            
+
             // For amountB = 100 and price = 2
             // amountA should be 50 (100/2) in base units
             expect(result[0].toString()).toBe((50 * 10 ** 9).toString());
@@ -136,13 +137,13 @@ describe('Meteora utils', () => {
             const result = await calculateAmounts(
                 '50',
                 'auto',
-                '2',  // price per token
+                '2', // price per token
                 mockDlmmPool
             );
 
             expect(result[0]).toBeInstanceOf(BN);
             expect(result[1]).toBeInstanceOf(BN);
-            
+
             // For amountA = 50 and price = 2
             // amountA should be 50 in base units
             expect(result[0].toString()).toBe((50 * 10 ** 9).toString());
@@ -154,33 +155,23 @@ describe('Meteora utils', () => {
             const result = await calculateAmounts(
                 '50',
                 '100',
-                '2',  // price per token (not used in this case)
+                '2', // price per token (not used in this case)
                 mockDlmmPool
             );
 
             expect(result[0]).toBeInstanceOf(BN);
             expect(result[1]).toBeInstanceOf(BN);
-            
+
             expect(result[0].toString()).toBe((50 * 10 ** 9).toString());
             expect(result[1].toString()).toBe((100 * 10 ** 6).toString());
         });
 
         it('should throw error when both amounts are auto', async () => {
-            await expect(calculateAmounts(
-                'auto',
-                'auto',
-                '2',
-                mockDlmmPool
-            )).rejects.toThrow(TypeError);
+            await expect(calculateAmounts('auto', 'auto', '2', mockDlmmPool)).rejects.toThrow(TypeError);
         });
 
         it('should throw error for invalid number inputs', async () => {
-            await expect(calculateAmounts(
-                'invalid',
-                '100',
-                '2',
-                mockDlmmPool
-            )).rejects.toThrow(TypeError);
+            await expect(calculateAmounts('invalid', '100', '2', mockDlmmPool)).rejects.toThrow(TypeError);
         });
     });
 
@@ -192,7 +183,7 @@ describe('Meteora utils', () => {
                 throw new Error('Token address not found');
             }
 
-            const connection = edwin.wallets['solana'].getConnection();
+            const connection = (edwin.wallets['solana'] as EdwinSolanaWallet).getConnection();
             const result = await extractBalanceChanges(
                 connection,
                 '31brBmpbZMqduwi3u1Z6Si2Xt4izdkX2TE45jdeeq1oVreiahKyfaHSArMKdyqKWeYFT6GwGWRBxwfnwfbGbPypR',
@@ -204,7 +195,7 @@ describe('Meteora utils', () => {
             expect(result).toHaveProperty('feesClaimed');
             expect(result.liquidityRemoved).toHaveLength(2);
             expect(result.feesClaimed).toHaveLength(2);
-            
+
             // Test against known values from the transaction
             expect(result).toEqual({
                 liquidityRemoved: [0, 20.274523],
@@ -213,13 +204,10 @@ describe('Meteora utils', () => {
         });
 
         it('should handle transaction not found', async () => {
-            const connection = edwin.wallets['solana'].getConnection();
-            await expect(extractBalanceChanges(
-                connection,
-                'invalid_signature',
-                'token_x_address',
-                'token_y_address'
-            )).rejects.toThrow(Error);
+            const connection = (edwin.wallets['solana'] as EdwinSolanaWallet).getConnection();
+            await expect(
+                extractBalanceChanges(connection, 'invalid_signature', 'token_x_address', 'token_y_address')
+            ).rejects.toThrow(Error);
         });
     });
 });

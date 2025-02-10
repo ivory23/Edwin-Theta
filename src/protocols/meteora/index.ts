@@ -1,10 +1,10 @@
 import { IDEXProtocol, LiquidityParams, SupportedChain } from '../../types';
-import { EdwinSolanaWallet } from '../../edwin-core/wallets/solana_wallet';
-import DLMM, { StrategyType, BinLiquidity, PositionInfo, PositionData } from '@meteora-ag/dlmm';
+import { EdwinSolanaWallet } from '../../edwin-core/wallets/solana_wallet/solana_wallet';
+import DLMM, { StrategyType, BinLiquidity, PositionData } from '@meteora-ag/dlmm';
 import { Keypair, PublicKey, SendTransactionError } from '@solana/web3.js';
 import { BN } from '@coral-xyz/anchor';
 import edwinLogger from '../../utils/logger';
-import { calculateAmounts, extractBalanceChanges } from './utils';
+import { calculateAmounts, extractBalanceChanges, withRetry } from './utils';
 
 interface MeteoraPoolResult {
     pairs: MeteoraPool[];
@@ -105,11 +105,11 @@ export class MeteoraProtocol implements IDEXProtocol {
         try {
             edwinLogger.info('GetPositions params: ', params);
             const connection = this.wallet.getConnection();
-            const dlmmPools: Map<string, PositionInfo> = await DLMM.getAllLbPairPositionsByUser(
-                connection,
-                this.wallet.getPublicKey()
+
+            return await withRetry(
+                async () => DLMM.getAllLbPairPositionsByUser(connection, this.wallet.getPublicKey()),
+                'Meteora getPositions'
             );
-            return dlmmPools;
         } catch (error: unknown) {
             edwinLogger.error('Meteora getPositions error:', error);
             const message = error instanceof Error ? error.message : String(error);
@@ -123,8 +123,11 @@ export class MeteoraProtocol implements IDEXProtocol {
             throw new Error('Pool address is required for Meteora getActiveBin');
         }
         const connection = this.wallet.getConnection();
-        const dlmmPool = await DLMM.create(connection, new PublicKey(poolAddress));
-        return dlmmPool.getActiveBin();
+
+        return await withRetry(async () => {
+            const dlmmPool = await DLMM.create(connection, new PublicKey(poolAddress));
+            return dlmmPool.getActiveBin();
+        }, 'Meteora getActiveBin');
     }
 
     async addLiquidity(params: LiquidityParams): Promise<string> {
@@ -145,9 +148,12 @@ export class MeteoraProtocol implements IDEXProtocol {
             }
 
             const connection = this.wallet.getConnection();
-            const dlmmPool = await DLMM.create(connection, new PublicKey(poolAddress));
+            const dlmmPool = await withRetry(
+                async () => DLMM.create(connection, new PublicKey(poolAddress)),
+                'Meteora create pool'
+            );
 
-            const activeBin = await dlmmPool.getActiveBin();
+            const activeBin = await withRetry(async () => dlmmPool.getActiveBin(), 'Meteora get active bin');
             const activeBinPricePerToken = dlmmPool.fromPricePerLamport(Number(activeBin.price));
             const [totalXAmount, totalYAmount] = await calculateAmounts(
                 amount,
@@ -159,9 +165,12 @@ export class MeteoraProtocol implements IDEXProtocol {
             let tx;
             let newBalancePosition;
 
-            // Check if user has an existing position
-            const { userPositions } = await dlmmPool.getPositionsByUserAndLbPair(this.wallet.getPublicKey());
-            const existingPosition = userPositions?.[0];
+            // Wrap the position check in retry logic
+            const positionInfo = await withRetry(
+                async () => dlmmPool.getPositionsByUserAndLbPair(this.wallet.getPublicKey()),
+                'Meteora get user positions'
+            );
+            const existingPosition = positionInfo?.userPositions?.[0];
             if (existingPosition) {
                 throw new Error('Edwin does not support adding liquidity to existing positions');
             } else {
@@ -264,8 +273,16 @@ Fees claimed:
             let shouldClaimAndClose = shouldClosePosition !== undefined ? shouldClosePosition : true;
 
             const connection = this.wallet.getConnection();
-            const dlmmPool = await DLMM.create(connection, new PublicKey(poolAddress));
-            const { userPositions } = await dlmmPool.getPositionsByUserAndLbPair(this.wallet.getPublicKey());
+            const dlmmPool = await withRetry(
+                async () => DLMM.create(connection, new PublicKey(poolAddress)),
+                'Meteora create pool'
+            );
+
+            const positionInfo = await withRetry(
+                async () => dlmmPool.getPositionsByUserAndLbPair(this.wallet.getPublicKey()),
+                'Meteora get user positions'
+            );
+            const userPositions = positionInfo?.userPositions;
             if (!userPositions || userPositions.length === 0) {
                 throw new Error('No positions found in this pool');
             }

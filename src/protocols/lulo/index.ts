@@ -1,6 +1,6 @@
 import { VersionedTransaction } from '@solana/web3.js';
 import { ILendingProtocol, SupplyParams, SupportedChain, WithdrawParams } from '../../types';
-import { EdwinSolanaWallet } from '../../edwin-core/wallets/solana_wallet';
+import { EdwinSolanaWallet } from '../../edwin-core/wallets/solana_wallet/solana_wallet';
 import edwinLogger from '../../utils/logger';
 
 export class LuloProtocol implements ILendingProtocol {

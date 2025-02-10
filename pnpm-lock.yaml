@@ -32,6 +32,9 @@ importers:
       '@vitest/eslint-plugin':
         specifier: ^1.1.25
         version: 1.1.25(@typescript-eslint/utils@6.21.0(eslint@8.57.1)(typescript@5.7.3))(eslint@8.57.1)(typescript@5.7.3)(vitest@1.6.0(@types/node@22.13.0))
+      axios:
+        specifier: ^1.7.9
+        version: 1.7.9
       bn.js:
         specifier: ^5.2.1
         version: 5.2.1
@@ -47,9 +50,6 @@ importers:
       ethers:
         specifier: ^5.7.2
         version: 5.7.2(bufferutil@4.0.9)(utf-8-validate@5.0.10)
-      jito-js-rpc:
-        specifier: ^0.1.0
-        version: 0.1.0(bufferutil@4.0.9)(utf-8-validate@5.0.10)
       prettier:
         specifier: ^3.4.2
         version: 3.4.2
@@ -1747,10 +1747,6 @@ packages:
     resolution: {integrity: sha512-LtXh5aYZodBZ9Fc3j6f2w+MTNcnxteMOrb+QgIouguGOulWi0lieEkOUg+HkjjFs0DGoWDds6bi4E9hpNFLulQ==}
     engines: {node: '>=8'}
     hasBin: true
-
-  jito-js-rpc@0.1.0:
-    resolution: {integrity: sha512-SAJIfJ++3tADo+3rijKSofwHosUObZKD93CGP4muM7T2uZDs+vk8LiYr5Eg1JGexhmQi/h7U2PRzoHJ7iM0Ifw==}
-    engines: {node: '>=14.0.0'}
 
   joycon@3.1.1:
     resolution: {integrity: sha512-34wB/Y7MW7bzjKRjUKTa46I2Z7eV62Rkhva+KkopW7Qvv/OSWBqvkSY7vusOPrNuZcUG3tApvdVgNB8POj3SPw==}
@@ -4622,16 +4618,6 @@ snapshots:
       ws: 7.5.10(bufferutil@4.0.9)(utf-8-validate@5.0.10)
     transitivePeerDependencies:
       - bufferutil
-      - utf-8-validate
-
-  jito-js-rpc@0.1.0(bufferutil@4.0.9)(utf-8-validate@5.0.10):
-    dependencies:
-      '@solana/web3.js': 1.98.0(bufferutil@4.0.9)(utf-8-validate@5.0.10)
-      axios: 1.7.9
-    transitivePeerDependencies:
-      - bufferutil
-      - debug
-      - encoding
       - utf-8-validate
 
   joycon@3.1.1: {}

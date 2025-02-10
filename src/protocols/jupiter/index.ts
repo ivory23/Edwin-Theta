@@ -1,6 +1,6 @@
 import { ISwapProtocol, SupportedChain } from '../../types';
 import { PublicKey, VersionedTransaction } from '@solana/web3.js';
-import { EdwinSolanaWallet } from '../../edwin-core/wallets/solana_wallet';
+import { EdwinSolanaWallet } from '../../edwin-core/wallets/solana_wallet/solana_wallet';
 
 interface JupiterQuoteParams {
     inputMint: string;

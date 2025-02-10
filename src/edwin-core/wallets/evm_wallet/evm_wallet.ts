@@ -2,10 +2,10 @@ import { createPublicClient, createWalletClient, formatUnits, http } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts';
 import type { Address, WalletClient, PublicClient, Chain, HttpTransport, Account, PrivateKeyAccount } from 'viem';
 import * as viemChains from 'viem/chains';
-import type { SupportedEVMChain } from '../../types';
-import { EdwinWallet } from './wallet';
+import type { SupportedEVMChain } from '../../../types';
+import { EdwinWallet } from '../wallet';
 import { ethers, providers } from 'ethers';
-import edwinLogger from '../../utils/logger';
+import edwinLogger from '../../../utils/logger';
 
 export const _SupportedEVMChainList = Object.keys(viemChains) as Array<keyof typeof viemChains>;
 

@@ -1,6 +1,42 @@
-import { Connection, PublicKey } from '@solana/web3.js';
+import { Connection } from '@solana/web3.js';
 import { BN } from '@coral-xyz/anchor';
 import DLMM from '@meteora-ag/dlmm';
+import edwinLogger from '../../utils/logger';
+
+const MAX_RETRIES = 3;
+const INITIAL_DELAY = 1000; // 1 second
+
+async function withRetry<T>(operation: () => Promise<T>, context: string): Promise<T> {
+    let lastError: Error;
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+        try {
+            return await operation();
+        } catch (error: unknown) {
+            lastError = error as Error;
+            const isTimeout =
+                error instanceof Error &&
+                (error.message.toLowerCase().includes('timeout') ||
+                    error.message.toLowerCase().includes('connectionerror'));
+
+            if (!isTimeout) {
+                throw error;
+            }
+
+            if (attempt === MAX_RETRIES) {
+                edwinLogger.error(`${context} failed after ${MAX_RETRIES} attempts:`, error);
+                throw new Error(`${context} failed after ${MAX_RETRIES} retries: ${lastError.message}`);
+            }
+
+            const delay = INITIAL_DELAY * attempt;
+            edwinLogger.warn(`${context} attempt ${attempt} failed, retrying in ${delay}ms:`, error);
+            await new Promise(resolve => setTimeout(resolve, delay));
+        }
+    }
+    // lastError will always be defined here since we must have caught at least one error to reach this point
+    throw lastError!;
+}
+
+export { withRetry };
 
 export async function calculateAmounts(
     amount: string,
@@ -22,9 +58,7 @@ export async function calculateAmounts(
     if (amount === 'auto') {
         // Calculate amount based on amountB
         if (!isNaN(Number(amountB))) {
-            totalXAmount = new BN(
-                (Number(amountB) / Number(activeBinPricePerToken)) * 10 ** dlmmPool.tokenX.decimal
-            );
+            totalXAmount = new BN((Number(amountB) / Number(activeBinPricePerToken)) * 10 ** dlmmPool.tokenX.decimal);
             totalYAmount = new BN(Number(amountB) * 10 ** dlmmPool.tokenY.decimal);
         } else {
             throw new TypeError('Invalid amountB value for second token for Meteora liquidity provision');
@@ -39,8 +73,8 @@ export async function calculateAmounts(
         }
     } else if (!isNaN(Number(amount)) && !isNaN(Number(amountB))) {
         // Both are numbers
-            totalXAmount = new BN(Number(amount) * 10 ** dlmmPool.tokenX.decimal);
-            totalYAmount = new BN(Number(amountB) * 10 ** dlmmPool.tokenY.decimal);
+        totalXAmount = new BN(Number(amount) * 10 ** dlmmPool.tokenX.decimal);
+        totalYAmount = new BN(Number(amountB) * 10 ** dlmmPool.tokenY.decimal);
     } else {
         throw new TypeError("Both amounts must be numbers or 'auto' for Meteora liquidity provision");
     }
@@ -111,4 +145,4 @@ export async function extractBalanceChanges(
         liquidityRemoved: [liquidityRemovedA, liquidityRemovedB],
         feesClaimed: [feesClaimedA, feesClaimedB],
     };
-} 
+}
