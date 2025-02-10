@@ -9,9 +9,9 @@ import {
     SystemProgram,
 } from '@solana/web3.js';
 import { TokenListProvider } from '@solana/spl-token-registry';
-import { EdwinWallet } from './wallet';
-import { JitoJsonRpcClient } from 'jito-js-rpc';
-import edwinLogger from '../../utils/logger';
+import { EdwinWallet } from '../wallet';
+import { JitoJsonRpcClient } from './jito_client';
+import edwinLogger from '../../../utils/logger';
 
 export class EdwinSolanaWallet extends EdwinWallet {
     private wallet: Keypair;

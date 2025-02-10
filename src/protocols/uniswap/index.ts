@@ -1,5 +1,5 @@
 import type { IDEXProtocol, LiquidityParams, SupportedChain } from '../../types';
-import { EdwinEVMWallet } from '../../edwin-core/wallets/evm_wallet';
+import { EdwinEVMWallet } from '../../edwin-core/wallets/evm_wallet/evm_wallet';
 
 export class UniswapProtocol implements IDEXProtocol {
     supportedChains: SupportedChain[] = ['mainnet'];

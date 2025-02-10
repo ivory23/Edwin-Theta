@@ -1,6 +1,6 @@
 import type { Token } from '@lifi/types';
 import type { Address, Chain } from 'viem';
-import { _SupportedEVMChainList } from '../edwin-core/wallets/evm_wallet';
+import { _SupportedEVMChainList } from '../edwin-core/wallets/evm_wallet/evm_wallet';
 import { ZodTypeDef, ZodSchema } from 'zod';
 import { Edwin } from '../edwin-client';
 

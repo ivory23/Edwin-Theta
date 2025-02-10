@@ -1,7 +1,7 @@
 import { Pool, EthereumTransactionTypeExtended } from '@aave/contract-helpers';
 import { AaveV3Base } from '@bgd-labs/aave-address-book';
 import { ethers, providers } from 'ethers';
-import { EdwinEVMWallet } from '../../edwin-core/wallets/evm_wallet';
+import { EdwinEVMWallet } from '../../edwin-core/wallets/evm_wallet/evm_wallet';
 import {
     type ILendingProtocol,
     type SupplyParams,
@@ -9,6 +9,7 @@ import {
     type SupportedChain,
     type SupportedEVMChain,
 } from '../../types';
+import edwinLogger from '../../utils/logger';
 
 export class AaveProtocol implements ILendingProtocol {
     public supportedChains: SupportedChain[] = ['base'];

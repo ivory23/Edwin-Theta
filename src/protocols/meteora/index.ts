@@ -1,9 +1,10 @@
 import { IDEXProtocol, LiquidityParams, SupportedChain } from '../../types';
-import { EdwinSolanaWallet } from '../../edwin-core/wallets/solana_wallet';
-import DLMM, { StrategyType, BinLiquidity, PositionInfo, PositionData } from '@meteora-ag/dlmm';
+import { EdwinSolanaWallet } from '../../edwin-core/wallets/solana_wallet/solana_wallet';
+import DLMM, { StrategyType, BinLiquidity, PositionData } from '@meteora-ag/dlmm';
 import { Keypair, PublicKey, SendTransactionError } from '@solana/web3.js';
 import { BN } from '@coral-xyz/anchor';
 import edwinLogger from '../../utils/logger';
+import { calculateAmounts, extractBalanceChanges, withRetry } from './utils';
 
 interface MeteoraPoolResult {
     pairs: MeteoraPool[];
@@ -104,63 +105,16 @@ export class MeteoraProtocol implements IDEXProtocol {
         try {
             edwinLogger.info('GetPositions params: ', params);
             const connection = this.wallet.getConnection();
-            const dlmmPools: Map<string, PositionInfo> = await DLMM.getAllLbPairPositionsByUser(
-                connection,
-                this.wallet.getPublicKey()
+
+            return await withRetry(
+                async () => DLMM.getAllLbPairPositionsByUser(connection, this.wallet.getPublicKey()),
+                'Meteora getPositions'
             );
-            return dlmmPools;
         } catch (error: unknown) {
             edwinLogger.error('Meteora getPositions error:', error);
             const message = error instanceof Error ? error.message : String(error);
             throw new Error(`Meteora getPositions failed: ${message}`);
         }
-    }
-
-    private async calculateAmounts(
-        amount: string,
-        amountB: string,
-        activeBinPricePerToken: string,
-        dlmmPool: DLMM
-    ): Promise<[BN, BN]> {
-        let totalXAmount;
-        let totalYAmount;
-
-        if (amount === 'auto' && amountB === 'auto') {
-            throw new Error(
-                "Amount for both first asset and second asset cannot be 'auto' for Meteora liquidity provision"
-            );
-        } else if (!amount || !amountB) {
-            throw new Error('Both amounts must be specified for Meteora liquidity provision');
-        }
-
-        if (amount === 'auto') {
-            // Calculate amount based on amountB
-            if (!isNaN(Number(amountB))) {
-                totalXAmount = new BN(
-                    (Number(amountB) / Number(activeBinPricePerToken)) * 10 ** dlmmPool.tokenX.decimal
-                );
-                totalYAmount = new BN(Number(amountB) * 10 ** dlmmPool.tokenY.decimal);
-            } else {
-                throw new Error('Invalid amountB value for second token for Meteora liquidity provision');
-            }
-        } else if (amountB === 'auto') {
-            // Calculate amountB based on amount
-            if (!isNaN(Number(amount))) {
-                totalXAmount = new BN(Number(amount) * 10 ** dlmmPool.tokenX.decimal);
-                totalYAmount = new BN(Number(amount) * Number(activeBinPricePerToken) * 10 ** dlmmPool.tokenY.decimal);
-            } else {
-                throw new Error('Invalid amount value for first token for Meteora liquidity provision');
-            }
-        } else {
-            // Both are numbers
-            if (!isNaN(Number(amount)) && !isNaN(Number(amountB))) {
-                totalXAmount = new BN(Number(amount) * 10 ** dlmmPool.tokenX.decimal);
-                totalYAmount = new BN(Number(amountB) * 10 ** dlmmPool.tokenY.decimal);
-            } else {
-                throw new Error("Both amounts must be numbers or 'auto' for Meteora liquidity provision");
-            }
-        }
-        return [totalXAmount, totalYAmount];
     }
 
     async getActiveBin(params: LiquidityParams): Promise<BinLiquidity> {
@@ -169,8 +123,11 @@ export class MeteoraProtocol implements IDEXProtocol {
             throw new Error('Pool address is required for Meteora getActiveBin');
         }
         const connection = this.wallet.getConnection();
-        const dlmmPool = await DLMM.create(connection, new PublicKey(poolAddress));
-        return dlmmPool.getActiveBin();
+
+        return await withRetry(async () => {
+            const dlmmPool = await DLMM.create(connection, new PublicKey(poolAddress));
+            return dlmmPool.getActiveBin();
+        }, 'Meteora getActiveBin');
     }
 
     async addLiquidity(params: LiquidityParams): Promise<string> {
@@ -191,11 +148,14 @@ export class MeteoraProtocol implements IDEXProtocol {
             }
 
             const connection = this.wallet.getConnection();
-            const dlmmPool = await DLMM.create(connection, new PublicKey(poolAddress));
+            const dlmmPool = await withRetry(
+                async () => DLMM.create(connection, new PublicKey(poolAddress)),
+                'Meteora create pool'
+            );
 
-            const activeBin = await dlmmPool.getActiveBin();
+            const activeBin = await withRetry(async () => dlmmPool.getActiveBin(), 'Meteora get active bin');
             const activeBinPricePerToken = dlmmPool.fromPricePerLamport(Number(activeBin.price));
-            const [totalXAmount, totalYAmount] = await this.calculateAmounts(
+            const [totalXAmount, totalYAmount] = await calculateAmounts(
                 amount,
                 amountB,
                 activeBinPricePerToken,
@@ -205,17 +165,20 @@ export class MeteoraProtocol implements IDEXProtocol {
             let tx;
             let newBalancePosition;
 
-            // Check if user has an existing position
-            const { userPositions } = await dlmmPool.getPositionsByUserAndLbPair(this.wallet.getPublicKey());
-            const existingPosition = userPositions?.[0];
+            // Wrap the position check in retry logic
+            const positionInfo = await withRetry(
+                async () => dlmmPool.getPositionsByUserAndLbPair(this.wallet.getPublicKey()),
+                'Meteora get user positions'
+            );
+            const existingPosition = positionInfo?.userPositions?.[0];
             if (existingPosition) {
                 throw new Error('Edwin does not support adding liquidity to existing positions');
             } else {
                 // Create new position
                 newBalancePosition = Keypair.generate();
-                const TOTAL_RANGE_INTERVAL = 10;
-                const minBinId = activeBin.binId - TOTAL_RANGE_INTERVAL;
-                const maxBinId = activeBin.binId + TOTAL_RANGE_INTERVAL;
+                const rangeInterval = Number(process.env.METEORA_TOTAL_RANGE_INTERVAL) || 10;
+                const minBinId = activeBin.binId - rangeInterval;
+                const maxBinId = activeBin.binId + rangeInterval;
 
                 tx = await dlmmPool.initializePositionAndAddLiquidityByStrategy({
                     positionPubKey: newBalancePosition.publicKey,
@@ -287,7 +250,6 @@ export class MeteoraProtocol implements IDEXProtocol {
             );
             const updatedPosition = updatedPositions[0].positionData;
 
-
             return `Successfully claimed fees from pool ${poolAddress}
 Transaction signature: ${signature}
 Fees claimed:
@@ -311,8 +273,16 @@ Fees claimed:
             let shouldClaimAndClose = shouldClosePosition !== undefined ? shouldClosePosition : true;
 
             const connection = this.wallet.getConnection();
-            const dlmmPool = await DLMM.create(connection, new PublicKey(poolAddress));
-            const { userPositions } = await dlmmPool.getPositionsByUserAndLbPair(this.wallet.getPublicKey());
+            const dlmmPool = await withRetry(
+                async () => DLMM.create(connection, new PublicKey(poolAddress)),
+                'Meteora create pool'
+            );
+
+            const positionInfo = await withRetry(
+                async () => dlmmPool.getPositionsByUserAndLbPair(this.wallet.getPublicKey()),
+                'Meteora get user positions'
+            );
+            const userPositions = positionInfo?.userPositions;
             if (!userPositions || userPositions.length === 0) {
                 throw new Error('No positions found in this pool');
             }
@@ -340,7 +310,7 @@ Fees claimed:
             for (let tx of Array.isArray(removeLiquidityTx) ? removeLiquidityTx : [removeLiquidityTx]) {
                 const signature = await this.wallet.sendTransaction(connection, tx, [this.wallet.getSigner()]);
                 await this.wallet.waitForConfirmationGracefully(connection, signature);
-                const balanceChanges = await this.extractBalanceChanges(signature, tokenXAddress, tokenYAddress);
+                const balanceChanges = await extractBalanceChanges(connection, signature, tokenXAddress, tokenYAddress);
                 liquidityRemoved[0] += balanceChanges.liquidityRemoved[0];
                 liquidityRemoved[1] += balanceChanges.liquidityRemoved[1];
                 feesClaimed[0] += balanceChanges.feesClaimed[0];
@@ -354,86 +324,5 @@ Fees claimed:
             const message = error instanceof Error ? error.message : String(error);
             throw new Error(`Meteora remove liquidity failed: ${message}`);
         }
-    }
-
-    async extractBalanceChanges(
-        signature: string,
-        tokenXAddress: string,
-        tokenYAddress: string
-    ): Promise<{ liquidityRemoved: [number, number]; feesClaimed: [number, number] }> {
-        const METEORA_DLMM_PROGRAM_ID = 'LBUZKhRxPF3XUpBCjp4YzTKgLccjZhTSDM9YuVaPwxo';
-
-        const connection = this.wallet.getConnection();
-        // Fetch the parsed transaction details.
-        // const txInfo = await connection.getTransaction(signature, { enc: 0 });
-        const txInfo = await connection.getParsedTransaction(signature, { maxSupportedTransactionVersion: 0 });
-
-        if (!txInfo || !txInfo.meta) {
-            throw new Error('Transaction details not found or not parsed');
-        }
-
-        // The outer instructions (the main instructions submitted in the transaction)
-        const outerInstructions = txInfo.transaction.message.instructions;
-        // The inner instructions are grouped by the outer instruction index they belong to.
-        const innerInstructions = txInfo.meta.innerInstructions || [];
-
-        // Build a map from outer instruction index to the array of inner instructions.
-        // (Not every outer instruction will have inner instructions.)
-        const innerMap: Record<number, any[]> = {};
-        for (const inner of innerInstructions) {
-            // inner.index tells you the outer instruction index that spawned these inner instructions.
-            innerMap[inner.index] = inner.instructions;
-        }
-
-        // Identify which outer instructions come from the Meteora DLMM program.
-        // (There could be other instructions as well.)
-        const meteoraInstructionIndices: number[] = [];
-        outerInstructions.forEach((ix: any, index: number) => {
-            // When using jsonParsed encoding, programId is a string.
-            if (ix.programId == METEORA_DLMM_PROGRAM_ID) {
-                meteoraInstructionIndices.push(index);
-            }
-        });
-
-        if (meteoraInstructionIndices.length < 2) {
-            throw new Error('Expected at least two Meteora instructions in the transaction');
-        }
-
-        // We assume that:
-        //   • The first Meteora instruction (by order) is RemoveLiquidityByRange.
-        //   • The second is ClaimFee.
-        const removeLiquidityIndex = meteoraInstructionIndices[0];
-        const claimFeeIndex = meteoraInstructionIndices[1];
-
-        // Helper: From a list of inner instructions, pick out any SPL Token transfer instructions.
-        const decodeTokenTransfers = (instructions: any[]): any[] => {
-            const transfers = [];
-            for (const ix of instructions) {
-                if (ix.program === 'spl-token' && ix.parsed && ix.parsed.type === 'transferChecked') {
-                    transfers.push(ix.parsed.info);
-                }
-            }
-            return transfers;
-        };
-
-        // For each Meteora outer instruction we care about, get the inner instructions (if any)
-        // and decode any token transfers.
-        const removeLiquidityTransfers = innerMap[removeLiquidityIndex]
-            ? decodeTokenTransfers(innerMap[removeLiquidityIndex])
-            : [];
-        const claimFeeTransfers = innerMap[claimFeeIndex] ? decodeTokenTransfers(innerMap[claimFeeIndex]) : [];
-
-        const liquidityRemovedA = removeLiquidityTransfers.find(transfer => transfer.mint == tokenXAddress)?.tokenAmount
-            .uiAmount;
-        const liquidityRemovedB = removeLiquidityTransfers.find(transfer => transfer.mint == tokenYAddress)?.tokenAmount
-            .uiAmount;
-
-        const feesClaimedA = claimFeeTransfers.find(transfer => transfer.mint == tokenXAddress)?.tokenAmount.uiAmount;
-        const feesClaimedB = claimFeeTransfers.find(transfer => transfer.mint == tokenYAddress)?.tokenAmount.uiAmount;
-
-        return {
-            liquidityRemoved: [liquidityRemovedA, liquidityRemovedB],
-            feesClaimed: [feesClaimedA, feesClaimedB],
-        };
     }
 }

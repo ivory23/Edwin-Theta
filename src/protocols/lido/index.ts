@@ -1,5 +1,5 @@
 import type { IStakingProtocol, StakeParams, SupportedChain } from '../../types';
-import { EdwinEVMWallet } from '../../edwin-core/wallets/evm_wallet';
+import { EdwinEVMWallet } from '../../edwin-core/wallets/evm_wallet/evm_wallet';
 
 export class LidoProtocol implements IStakingProtocol {
     private wallet: EdwinEVMWallet;

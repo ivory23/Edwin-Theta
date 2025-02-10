@@ -32,6 +32,9 @@ importers:
       '@vitest/eslint-plugin':
         specifier: ^1.1.25
         version: 1.1.25(@typescript-eslint/utils@6.21.0(eslint@8.57.1)(typescript@5.7.3))(eslint@8.57.1)(typescript@5.7.3)(vitest@1.6.0(@types/node@22.13.0))
+      axios:
+        specifier: ^1.7.9
+        version: 1.7.9
       bn.js:
         specifier: ^5.2.1
         version: 5.2.1
@@ -47,9 +50,6 @@ importers:
       ethers:
         specifier: ^5.7.2
         version: 5.7.2(bufferutil@4.0.9)(utf-8-validate@5.0.10)
-      jito-js-rpc:
-        specifier: ^0.1.0
-        version: 0.1.0(bufferutil@4.0.9)(utf-8-validate@5.0.10)
       prettier:
         specifier: ^3.4.2
         version: 3.4.2
@@ -57,6 +57,9 @@ importers:
         specifier: ^3.17.0
         version: 3.17.0
     devDependencies:
+      '@eslint/js':
+        specifier: ^9.15.0
+        version: 9.20.0
       '@lifi/data-types':
         specifier: 5.15.5
         version: 5.15.5
@@ -463,6 +466,10 @@ packages:
   '@eslint/js@8.57.1':
     resolution: {integrity: sha512-d9zaMRSTIKDLhctzH12MtXvJKSSUhaHcjV+2Z+GK+EEY7XKpP5yR4x+N3TAcHTcu963nIr+TMcCb4DBCYX1z6Q==}
     engines: {node: ^12.22.0 || ^14.17.0 || >=16.0.0}
+
+  '@eslint/js@9.20.0':
+    resolution: {integrity: sha512-iZA07H9io9Wn836aVTytRaNqh00Sad+EamwOVJT12GTLw1VGMFV/4JaME+JjLtr9fiGaoWgYnS54wrfWsSs4oQ==}
+    engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
 
   '@ethersproject/abi@5.7.0':
     resolution: {integrity: sha512-351ktp42TiRcYB3H1OP8yajPeAQstMW/yCFokj/AthP9bLHzQFPlOrxOcwYEDkUAICmOHljvN4K39OMTMUa9RA==}
@@ -1741,10 +1748,6 @@ packages:
     engines: {node: '>=8'}
     hasBin: true
 
-  jito-js-rpc@0.1.0:
-    resolution: {integrity: sha512-SAJIfJ++3tADo+3rijKSofwHosUObZKD93CGP4muM7T2uZDs+vk8LiYr5Eg1JGexhmQi/h7U2PRzoHJ7iM0Ifw==}
-    engines: {node: '>=14.0.0'}
-
   joycon@3.1.1:
     resolution: {integrity: sha512-34wB/Y7MW7bzjKRjUKTa46I2Z7eV62Rkhva+KkopW7Qvv/OSWBqvkSY7vusOPrNuZcUG3tApvdVgNB8POj3SPw==}
     engines: {node: '>=10'}
@@ -2943,6 +2946,8 @@ snapshots:
       - supports-color
 
   '@eslint/js@8.57.1': {}
+
+  '@eslint/js@9.20.0': {}
 
   '@ethersproject/abi@5.7.0':
     dependencies:
@@ -4613,16 +4618,6 @@ snapshots:
       ws: 7.5.10(bufferutil@4.0.9)(utf-8-validate@5.0.10)
     transitivePeerDependencies:
       - bufferutil
-      - utf-8-validate
-
-  jito-js-rpc@0.1.0(bufferutil@4.0.9)(utf-8-validate@5.0.10):
-    dependencies:
-      '@solana/web3.js': 1.98.0(bufferutil@4.0.9)(utf-8-validate@5.0.10)
-      axios: 1.7.9
-    transitivePeerDependencies:
-      - bufferutil
-      - debug
-      - encoding
       - utf-8-validate
 
   joycon@3.1.1: {}
