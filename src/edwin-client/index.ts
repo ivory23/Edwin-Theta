@@ -7,7 +7,7 @@ import edwinLogger from '../utils/logger';
 export { getEdwinTools } from './langchain';
 
 export class Edwin {
-    private wallets: Record<string, EdwinWallet> = {};
+    public wallets: Record<string, EdwinWallet> = {};
     public protocols: Record<string, DeFiProtocol>;
     public actions: ActionMap;
 
