@@ -423,9 +423,9 @@ Fees claimed:
         const claimFeeTransfers = innerMap[claimFeeIndex] ? decodeTokenTransfers(innerMap[claimFeeIndex]) : [];
 
         const liquidityRemovedA = removeLiquidityTransfers.find(transfer => transfer.mint == tokenXAddress)?.tokenAmount
-            .uiAmount;
+            .uiAmount || 0;
         const liquidityRemovedB = removeLiquidityTransfers.find(transfer => transfer.mint == tokenYAddress)?.tokenAmount
-            .uiAmount;
+            .uiAmount || 0;
 
         const feesClaimedA = claimFeeTransfers.find(transfer => transfer.mint == tokenXAddress)?.tokenAmount.uiAmount;
         const feesClaimedB = claimFeeTransfers.find(transfer => transfer.mint == tokenYAddress)?.tokenAmount.uiAmount;
