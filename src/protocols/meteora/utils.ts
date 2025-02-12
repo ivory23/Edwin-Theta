@@ -205,8 +205,8 @@ export async function simulateAddLiquidityTransaction(
             if (innerInstruction.instructions) {
                 for (const instruction of innerInstruction.instructions) {
                     if (instruction.parsed && instruction.parsed.type === 'transferChecked') {
-                        edwinLogger.debug('Transfer info:', JSON.stringify(instruction.parsed.info));
-                        edwinLogger.debug('Transfer info amounts:', JSON.stringify(instruction.parsed.info.tokenAmount));
+                        edwinLogger.debug('Transfer info:', JSON.stringify(instruction.parsed.info, null, 2));
+                        edwinLogger.debug('Transfer info amounts:', JSON.stringify(instruction.parsed.info.tokenAmount, null, 2));
                         tokenAmounts.push(instruction.parsed.info.tokenAmount);
                     }
                 }

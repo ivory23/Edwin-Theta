@@ -164,7 +164,7 @@ export class MeteoraProtocol implements IDEXProtocol {
 
             let tx;
             let newBalancePosition;
-            edwinLogger.debug('Opening position with Total X amount: ', totalXAmount, 'Total Y amount: ', totalYAmount);
+            edwinLogger.debug(`Opening position with Total X amount: ${totalXAmount}, Total Y amount: ${totalYAmount}`);
 
             // Wrap the position check in retry logic
             const positionInfo = await withRetry(
