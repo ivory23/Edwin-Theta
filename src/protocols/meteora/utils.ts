@@ -179,6 +179,25 @@ export async function extractBalanceChanges(
     };
 }
 
+export async function extractAddLiquidityTokenAmounts(innerInstructions: InnerInstruction[]): Promise<TokenAmount[]> {
+    let tokenAmounts: TokenAmount[] = [];
+    for (const innerInstruction of innerInstructions) {
+        if (innerInstruction.instructions) {
+            for (const instruction of innerInstruction.instructions) {
+                if (instruction.parsed && instruction.parsed.type === 'transferChecked') {
+                    edwinLogger.debug('Transfer info:', JSON.stringify(instruction.parsed.info, null, 2));
+                    edwinLogger.debug(
+                        'Transfer info amounts:',
+                        JSON.stringify(instruction.parsed.info.tokenAmount, null, 2)
+                    );
+                    tokenAmounts.push(instruction.parsed.info.tokenAmount);
+                }
+            }
+        }
+    }
+    return tokenAmounts;
+}
+    
 export async function simulateAddLiquidityTransaction(
     connection: Connection,
     tx: Transaction,
@@ -195,25 +214,29 @@ export async function simulateAddLiquidityTransaction(
 
     // Assume `connection` is a Connection and `transaction` is your built Transaction.
     const simulationResult = await connection.simulateTransaction(versionedTx, { innerInstructions: true });
-    edwinLogger.debug('Simulation result: ', JSON.stringify(simulationResult, null, 2));
 
-    let tokenAmounts: TokenAmount[] = [];
-    if (simulationResult.value.innerInstructions) {
-        const innerInstructions = simulationResult.value.innerInstructions as InnerInstruction[];
-
-        for (const innerInstruction of innerInstructions) {
-            if (innerInstruction.instructions) {
-                for (const instruction of innerInstruction.instructions) {
-                    if (instruction.parsed && instruction.parsed.type === 'transferChecked') {
-                        edwinLogger.debug('Transfer info:', JSON.stringify(instruction.parsed.info, null, 2));
-                        edwinLogger.debug('Transfer info amounts:', JSON.stringify(instruction.parsed.info.tokenAmount, null, 2));
-                        tokenAmounts.push(instruction.parsed.info.tokenAmount);
-                    }
-                }
-            }
-        }
+    const innerInstructions = simulationResult.value.innerInstructions;
+    if (!innerInstructions) {
+        throw new Error('Inner instructions not found in simulation result');
     }
-    edwinLogger.info('Token amounts:', tokenAmounts);
+
+    return extractAddLiquidityTokenAmounts(innerInstructions as InnerInstruction[]);
+}
+
+
+export async function verifyAddLiquidityTokenAmounts(
+    connection: Connection,
+    signature: string,
+): Promise<TokenAmount[]> {
+    // Fetch the parsed transaction details.
+    const txInfo = await connection.getParsedTransaction(signature, { maxSupportedTransactionVersion: 0 });
+
+    if (!txInfo || !txInfo.meta) {
+        throw new Error('Transaction details not found or not parsed');
+    }
+
+    const innerInstructions = txInfo.meta.innerInstructions || [];
+    const tokenAmounts = await extractAddLiquidityTokenAmounts(innerInstructions as InnerInstruction[]);
 
     return tokenAmounts;
 }

@@ -4,7 +4,7 @@ import DLMM, { StrategyType, BinLiquidity, PositionData } from '@meteora-ag/dlmm
 import { Keypair, PublicKey, SendTransactionError } from '@solana/web3.js';
 import { BN } from '@coral-xyz/anchor';
 import edwinLogger from '../../utils/logger';
-import { calculateAmounts, extractBalanceChanges, withRetry, simulateAddLiquidityTransaction } from './utils';
+import { calculateAmounts, extractBalanceChanges, withRetry, simulateAddLiquidityTransaction, verifyAddLiquidityTokenAmounts } from './utils';
 
 interface MeteoraPoolResult {
     pairs: MeteoraPool[];
@@ -130,7 +130,7 @@ export class MeteoraProtocol implements IDEXProtocol {
         }, 'Meteora getActiveBin');
     }
 
-    async addLiquidity(params: LiquidityParams): Promise<string> {
+    async addLiquidity(params: LiquidityParams): Promise<{ liquidityAdded: [number, number] }> {
         const { chain, amount, amountB, poolAddress } = params;
         edwinLogger.info(
             `Calling Meteora protocol to add liquidity to pool ${poolAddress} with ${amount} and ${amountB}`
@@ -165,6 +165,9 @@ export class MeteoraProtocol implements IDEXProtocol {
             let tx;
             let newBalancePosition;
             edwinLogger.debug(`Opening position with Total X amount: ${totalXAmount}, Total Y amount: ${totalYAmount}`);
+            const rangeInterval = Number(process.env.METEORA_TOTAL_RANGE_INTERVAL) || 10;
+            const minBinId = activeBin.binId - rangeInterval;
+            const maxBinId = activeBin.binId + rangeInterval;
 
             // Wrap the position check in retry logic
             const positionInfo = await withRetry(
@@ -177,10 +180,6 @@ export class MeteoraProtocol implements IDEXProtocol {
             } else {
                 // Create new position
                 newBalancePosition = Keypair.generate();
-                const rangeInterval = Number(process.env.METEORA_TOTAL_RANGE_INTERVAL) || 10;
-                const minBinId = activeBin.binId - rangeInterval;
-                const maxBinId = activeBin.binId + rangeInterval;
-
                 tx = await dlmmPool.initializePositionAndAddLiquidityByStrategy({
                     positionPubKey: newBalancePosition.publicKey,
                     user: this.wallet.getPublicKey(),
@@ -194,11 +193,11 @@ export class MeteoraProtocol implements IDEXProtocol {
                 });
             }
 
-            const tokenAmounts = await simulateAddLiquidityTransaction(connection, tx, this.wallet);
-            if (tokenAmounts.length != 2) {
-                throw new Error('Expected 2 token amounts in tx simulation, got ' + tokenAmounts.length);
+            const simulatedTokenAmounts = await simulateAddLiquidityTransaction(connection, tx, this.wallet);
+            if (simulatedTokenAmounts.length != 2) {
+                throw new Error('Expected 2 token amounts in tx simulation, got ' + simulatedTokenAmounts.length);
             }
-            for (const tokenAmount of tokenAmounts) {
+            for (const tokenAmount of simulatedTokenAmounts) {
                 if (tokenAmount.uiAmount === 0) {
                     throw new Error('Token amount in transaction simulation is 0, aborting transaction');
                 }
@@ -216,7 +215,42 @@ export class MeteoraProtocol implements IDEXProtocol {
             if (newBalancePosition) {
                 this.openPositions.add(newBalancePosition.publicKey.toString());
             }
-            return 'Successfully added liquidity to pool ' + poolAddress + ', transaction signature: ' + signature;
+            const verifiedTokenAmounts = await verifyAddLiquidityTokenAmounts(connection, signature);
+            if (verifiedTokenAmounts.length != 2) {
+                throw new Error('Expected 2 token amounts in tx verification, got ' + verifiedTokenAmounts.length);
+            }
+            if (verifiedTokenAmounts[0].uiAmount < simulatedTokenAmounts[0].uiAmount || verifiedTokenAmounts[1].uiAmount < simulatedTokenAmounts[1].uiAmount) {
+                edwinLogger.info('Encounted a statistical bug where not all of the liquidity was added to the pool');
+                let remainingXAmount = new BN(simulatedTokenAmounts[0].amount).sub(new BN(verifiedTokenAmounts[0].amount));
+                let remainingYAmount = new BN(simulatedTokenAmounts[1].amount).sub(new BN(verifiedTokenAmounts[1].amount));
+                while (remainingXAmount.gt(new BN(0)) || remainingYAmount.gt(new BN(0))) {
+                    edwinLogger.info(`Supplying remaining liquidity to the pool: ${remainingXAmount.toString()} and ${remainingYAmount.toString()}`);
+                    const addLiquidityTx = await dlmmPool.addLiquidityByStrategy({
+                        positionPubKey: newBalancePosition.publicKey,
+                        user: this.wallet.getPublicKey(),
+                        totalXAmount: remainingXAmount,
+                        totalYAmount: remainingYAmount,
+                        strategy: {
+                            maxBinId: activeBin.binId + rangeInterval,
+                            minBinId: activeBin.binId - rangeInterval,
+                            strategyType: StrategyType.SpotImBalanced,
+                        },
+                    });
+                    const signature = await this.wallet.sendTransaction(connection, addLiquidityTx, [this.wallet.getSigner()]);
+                    const confirmation = await this.wallet.waitForConfirmationGracefully(connection, signature);
+                    if (confirmation.err) {
+                        throw new Error(`Transaction failed: ${confirmation.err.toString()}`);
+                    }
+                    const verifiedTokenAmounts = await verifyAddLiquidityTokenAmounts(connection, signature);
+                    if (verifiedTokenAmounts.length != 2) {
+                        throw new Error('Expected 2 token amounts in tx verification, got ' + verifiedTokenAmounts.length);
+                    }
+                    remainingXAmount = remainingXAmount.sub(new BN(verifiedTokenAmounts[0].amount));
+                    remainingYAmount = remainingYAmount.sub(new BN(verifiedTokenAmounts[1].amount));
+                }
+            }
+
+            return { liquidityAdded: [simulatedTokenAmounts[0].uiAmount, simulatedTokenAmounts[1].uiAmount] };
         } catch (error: unknown) {
             if (error instanceof SendTransactionError) {
                 const logs = await error.getLogs(this.wallet.getConnection());

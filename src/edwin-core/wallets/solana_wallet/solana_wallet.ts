@@ -57,7 +57,7 @@ export class EdwinSolanaWallet extends EdwinWallet {
 
     async getBalance(symbol?: string): Promise<number> {
         const connection = this.getConnection();
-        if (!symbol) {
+        if (!symbol || symbol.toLowerCase() === 'sol') {
             // Get SOL balance
             return (await connection.getBalance(this.wallet_address)) / LAMPORTS_PER_SOL;
         }

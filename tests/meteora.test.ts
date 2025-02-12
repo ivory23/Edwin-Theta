@@ -52,6 +52,11 @@ describe('Meteora test', () => {
             protocol: 'meteora',
             chain: 'solana',
         });
+        // Verify liquidity was added correctly
+        expect(result.liquidityAdded).toBeDefined();
+        expect(result.liquidityAdded).toHaveLength(2);
+        expect(result.liquidityAdded[1]).toBeCloseTo(2, 1); // Verify USDC amount is approximately 2
+        expect(result.liquidityAdded[0]).toBeGreaterThan(0); // Verify SOL amount is non-zero
         edwinLogger.info('🚀 ~ it ~ result:', result);
 
         // Get positions after adding liquidity
