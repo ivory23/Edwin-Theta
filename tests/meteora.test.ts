@@ -64,13 +64,10 @@ describe('Meteora test', () => {
             protocol: 'meteora',
             chain: 'solana',
         });
-        edwinLogger.info('🚀 ~ it ~ positions:', positions);
-
         // Check that positions is ok - should be 1 position
         expect(positions).toBeDefined();
         expect(positions.size).toBe(1);
         const positionKey = positions.keys().toArray()[0];
-        edwinLogger.info('🚀 ~ it ~ positions:', positionKey);
     }, 120000); // 120 second timeout
 
     it('test meteora remove liquidity', async () => {

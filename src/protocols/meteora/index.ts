@@ -4,7 +4,13 @@ import DLMM, { StrategyType, BinLiquidity, PositionData } from '@meteora-ag/dlmm
 import { Keypair, PublicKey, SendTransactionError } from '@solana/web3.js';
 import { BN } from '@coral-xyz/anchor';
 import edwinLogger from '../../utils/logger';
-import { calculateAmounts, extractBalanceChanges, withRetry, simulateAddLiquidityTransaction, verifyAddLiquidityTokenAmounts } from './utils';
+import {
+    calculateAmounts,
+    extractBalanceChanges,
+    withRetry,
+    simulateAddLiquidityTransaction,
+    verifyAddLiquidityTokenAmounts,
+} from './utils';
 
 interface MeteoraPoolResult {
     pairs: MeteoraPool[];
@@ -219,12 +225,21 @@ export class MeteoraProtocol implements IDEXProtocol {
             if (verifiedTokenAmounts.length != 2) {
                 throw new Error('Expected 2 token amounts in tx verification, got ' + verifiedTokenAmounts.length);
             }
-            if (verifiedTokenAmounts[0].uiAmount < simulatedTokenAmounts[0].uiAmount || verifiedTokenAmounts[1].uiAmount < simulatedTokenAmounts[1].uiAmount) {
+            if (
+                verifiedTokenAmounts[0].uiAmount < simulatedTokenAmounts[0].uiAmount ||
+                verifiedTokenAmounts[1].uiAmount < simulatedTokenAmounts[1].uiAmount
+            ) {
                 edwinLogger.info('Encounted a statistical bug where not all of the liquidity was added to the pool');
-                let remainingXAmount = new BN(simulatedTokenAmounts[0].amount).sub(new BN(verifiedTokenAmounts[0].amount));
-                let remainingYAmount = new BN(simulatedTokenAmounts[1].amount).sub(new BN(verifiedTokenAmounts[1].amount));
+                let remainingXAmount = new BN(simulatedTokenAmounts[0].amount).sub(
+                    new BN(verifiedTokenAmounts[0].amount)
+                );
+                let remainingYAmount = new BN(simulatedTokenAmounts[1].amount).sub(
+                    new BN(verifiedTokenAmounts[1].amount)
+                );
                 while (remainingXAmount.gt(new BN(0)) || remainingYAmount.gt(new BN(0))) {
-                    edwinLogger.info(`Supplying remaining liquidity to the pool: ${remainingXAmount.toString()} and ${remainingYAmount.toString()}`);
+                    edwinLogger.info(
+                        `Supplying remaining liquidity to the pool: ${remainingXAmount.toString()} and ${remainingYAmount.toString()}`
+                    );
                     const addLiquidityTx = await dlmmPool.addLiquidityByStrategy({
                         positionPubKey: newBalancePosition.publicKey,
                         user: this.wallet.getPublicKey(),
@@ -236,14 +251,18 @@ export class MeteoraProtocol implements IDEXProtocol {
                             strategyType: StrategyType.SpotImBalanced,
                         },
                     });
-                    const signature = await this.wallet.sendTransaction(connection, addLiquidityTx, [this.wallet.getSigner()]);
+                    const signature = await this.wallet.sendTransaction(connection, addLiquidityTx, [
+                        this.wallet.getSigner(),
+                    ]);
                     const confirmation = await this.wallet.waitForConfirmationGracefully(connection, signature);
                     if (confirmation.err) {
                         throw new Error(`Transaction failed: ${confirmation.err.toString()}`);
                     }
                     const verifiedTokenAmounts = await verifyAddLiquidityTokenAmounts(connection, signature);
                     if (verifiedTokenAmounts.length != 2) {
-                        throw new Error('Expected 2 token amounts in tx verification, got ' + verifiedTokenAmounts.length);
+                        throw new Error(
+                            'Expected 2 token amounts in tx verification, got ' + verifiedTokenAmounts.length
+                        );
                     }
                     remainingXAmount = remainingXAmount.sub(new BN(verifiedTokenAmounts[0].amount));
                     remainingYAmount = remainingYAmount.sub(new BN(verifiedTokenAmounts[1].amount));

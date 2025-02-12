@@ -185,10 +185,8 @@ export async function extractAddLiquidityTokenAmounts(innerInstructions: InnerIn
         if (innerInstruction.instructions) {
             for (const instruction of innerInstruction.instructions) {
                 if (instruction.parsed && instruction.parsed.type === 'transferChecked') {
-                    edwinLogger.debug('Transfer info:', JSON.stringify(instruction.parsed.info, null, 2));
                     edwinLogger.debug(
-                        'Transfer info amounts:',
-                        JSON.stringify(instruction.parsed.info.tokenAmount, null, 2)
+                        `Transfer info amounts: ${JSON.stringify(instruction.parsed.info.tokenAmount, null, 2)}`
                     );
                     tokenAmounts.push(instruction.parsed.info.tokenAmount);
                 }
@@ -197,7 +195,7 @@ export async function extractAddLiquidityTokenAmounts(innerInstructions: InnerIn
     }
     return tokenAmounts;
 }
-    
+
 export async function simulateAddLiquidityTransaction(
     connection: Connection,
     tx: Transaction,
@@ -223,10 +221,9 @@ export async function simulateAddLiquidityTransaction(
     return extractAddLiquidityTokenAmounts(innerInstructions as InnerInstruction[]);
 }
 
-
 export async function verifyAddLiquidityTokenAmounts(
     connection: Connection,
-    signature: string,
+    signature: string
 ): Promise<TokenAmount[]> {
     // Fetch the parsed transaction details.
     const txInfo = await connection.getParsedTransaction(signature, { maxSupportedTransactionVersion: 0 });
