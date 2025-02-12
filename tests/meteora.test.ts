@@ -24,7 +24,9 @@ describe('Meteora test', () => {
             assetB: 'usdc',
             protocol: 'meteora',
         });
-        edwinLogger.info('🚀 ~ it ~ getPools result:', results);
+        expect(results).toBeDefined();
+        expect(results).toBeInstanceOf(Array);
+        expect(results.length).toBe(10);
     }, 30000); // 30 second timeout
 
     it('test meteora getPositions - note - need to use a paid RPC', async () => {
@@ -41,7 +43,6 @@ describe('Meteora test', () => {
             assetB: 'usdc',
             protocol: 'meteora',
         });
-        edwinLogger.info('🚀 ~ it ~ result:', results);
         const topPoolAddress = results[0].address;
 
         const result = await edwin.actions.addLiquidity.execute({
@@ -201,13 +202,13 @@ describe('Meteora utils', () => {
                 liquidityRemoved: [0, 20.274523],
                 feesClaimed: [0.000004094, 0.003779],
             });
-        });
+        }, 20000);
 
         it('should handle transaction not found', async () => {
             const connection = (edwin.wallets['solana'] as EdwinSolanaWallet).getConnection();
             await expect(
                 extractBalanceChanges(connection, 'invalid_signature', 'token_x_address', 'token_y_address')
             ).rejects.toThrow(Error);
-        });
+        }, 20000);
     });
 });

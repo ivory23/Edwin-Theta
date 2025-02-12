@@ -1,10 +1,10 @@
 import { IDEXProtocol, LiquidityParams, SupportedChain } from '../../types';
 import { EdwinSolanaWallet } from '../../edwin-core/wallets/solana_wallet/solana_wallet';
 import DLMM, { StrategyType, BinLiquidity, PositionData } from '@meteora-ag/dlmm';
-import { Keypair, PublicKey, SendTransactionError } from '@solana/web3.js';
+import { Keypair, PublicKey, SendTransactionError} from '@solana/web3.js';
 import { BN } from '@coral-xyz/anchor';
 import edwinLogger from '../../utils/logger';
-import { calculateAmounts, extractBalanceChanges, withRetry } from './utils';
+import { calculateAmounts, extractBalanceChanges, withRetry, simulateAddLiquidityTransaction } from './utils';
 
 interface MeteoraPoolResult {
     pairs: MeteoraPool[];
@@ -192,6 +192,16 @@ export class MeteoraProtocol implements IDEXProtocol {
                         strategyType: StrategyType.SpotImBalanced,
                     },
                 });
+            }
+
+            const tokenAmounts = await simulateAddLiquidityTransaction(connection, tx, this.wallet);
+            if (tokenAmounts.length != 2) {
+                throw new Error('Expected 2 token amounts in tx simulation, got ' + tokenAmounts.length);
+            }
+            for (const tokenAmount of tokenAmounts) {
+                if (tokenAmount.uiAmount === 0) {
+                    throw new Error('Token amount in transaction simulation is 0, aborting transaction');
+                }
             }
 
             const signature = await this.wallet.sendTransaction(

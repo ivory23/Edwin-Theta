@@ -1,10 +1,43 @@
-import { Connection } from '@solana/web3.js';
+import { Connection, Transaction, TransactionMessage, VersionedTransaction } from '@solana/web3.js';
 import { BN } from '@coral-xyz/anchor';
 import DLMM from '@meteora-ag/dlmm';
 import edwinLogger from '../../utils/logger';
+import { EdwinSolanaWallet } from '../../edwin-core/wallets/solana_wallet/solana_wallet';
 
 const MAX_RETRIES = 3;
 const INITIAL_DELAY = 1000; // 1 second
+
+interface ParsedInstruction {
+    parsed?: {
+        type: string;
+        info: {
+            amount: string;
+            authority: string;
+            destination: string;
+            mint: string;
+            source: string;
+            tokenAmount: {
+                amount: string;
+                decimals: number;
+                uiAmount: number;
+                uiAmountString: string;
+            };
+        };
+    };
+}
+
+interface InnerInstruction {
+    index: number;
+    instructions: ParsedInstruction[];
+}
+
+interface TokenAmount {
+    amount: string;
+    decimals: number;
+    uiAmount: number;
+    uiAmountString: string;
+}
+
 
 async function withRetry<T>(operation: () => Promise<T>, context: string): Promise<T> {
     let lastError: Error;
@@ -145,4 +178,39 @@ export async function extractBalanceChanges(
         liquidityRemoved: [liquidityRemovedA, liquidityRemovedB],
         feesClaimed: [feesClaimedA, feesClaimedB],
     };
+}
+
+export async function simulateAddLiquidityTransaction(connection: Connection, tx: Transaction, wallet: EdwinSolanaWallet): Promise<TokenAmount[]> {
+    // Convert to versioned transaction
+    const latestBlockhash = await connection.getLatestBlockhash();
+    const messageV0 = new TransactionMessage({
+        payerKey: wallet.getPublicKey(),
+        recentBlockhash: latestBlockhash.blockhash,
+        instructions: tx.instructions,
+    }).compileToV0Message();
+    const versionedTx = new VersionedTransaction(messageV0);
+
+    // Assume `connection` is a Connection and `transaction` is your built Transaction.
+    const simulationResult = await connection.simulateTransaction(versionedTx, { innerInstructions: true});
+    edwinLogger.debug('Simulation result: ', JSON.stringify(simulationResult, null, 2));
+
+    let tokenAmounts: TokenAmount[] = [];
+    if (simulationResult.value.innerInstructions) {
+        const innerInstructions = simulationResult.value.innerInstructions as InnerInstruction[];
+        
+        for (const innerInstruction of innerInstructions) {
+            if (innerInstruction.instructions) {
+                for (const instruction of innerInstruction.instructions) {
+                    if (instruction.parsed && instruction.parsed.type === 'transferChecked') {
+                        edwinLogger.debug('Transfer info:', instruction.parsed.info);
+                        edwinLogger.debug('Transfer info amounts:', instruction.parsed.info.tokenAmount);
+                        tokenAmounts.push(instruction.parsed.info.tokenAmount);
+                    }
+                }
+            }
+        }
+    }
+    edwinLogger.info('Token amounts:', tokenAmounts);
+
+    return tokenAmounts;
 }
