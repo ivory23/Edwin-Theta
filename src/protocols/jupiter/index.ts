@@ -102,6 +102,8 @@ export class JupiterProtocol implements ISwapProtocol {
         if (!asset || !assetB || !amount) {
             throw new Error('Invalid swap params. Need: asset, assetB, amount');
         }
+        await this.wallet.verifyBalance(asset, Number(amount));
+
         // 1. Get quote from Jupiter
         const inputMint = await this.wallet.getTokenAddress(asset);
         const outputMint = await this.wallet.getTokenAddress(assetB);
