@@ -1,7 +1,7 @@
 import { IDEXProtocol, LiquidityParams, SupportedChain } from '../../types';
 import { EdwinSolanaWallet } from '../../edwin-core/wallets/solana_wallet/solana_wallet';
 import DLMM, { StrategyType, BinLiquidity, PositionData } from '@meteora-ag/dlmm';
-import { Keypair, PublicKey, SendTransactionError} from '@solana/web3.js';
+import { Keypair, PublicKey, SendTransactionError } from '@solana/web3.js';
 import { BN } from '@coral-xyz/anchor';
 import edwinLogger from '../../utils/logger';
 import { calculateAmounts, extractBalanceChanges, withRetry, simulateAddLiquidityTransaction } from './utils';

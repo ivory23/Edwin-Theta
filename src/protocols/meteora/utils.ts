@@ -38,7 +38,6 @@ interface TokenAmount {
     uiAmountString: string;
 }
 
-
 async function withRetry<T>(operation: () => Promise<T>, context: string): Promise<T> {
     let lastError: Error;
     for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
@@ -180,7 +179,11 @@ export async function extractBalanceChanges(
     };
 }
 
-export async function simulateAddLiquidityTransaction(connection: Connection, tx: Transaction, wallet: EdwinSolanaWallet): Promise<TokenAmount[]> {
+export async function simulateAddLiquidityTransaction(
+    connection: Connection,
+    tx: Transaction,
+    wallet: EdwinSolanaWallet
+): Promise<TokenAmount[]> {
     // Convert to versioned transaction
     const latestBlockhash = await connection.getLatestBlockhash();
     const messageV0 = new TransactionMessage({
@@ -191,13 +194,13 @@ export async function simulateAddLiquidityTransaction(connection: Connection, tx
     const versionedTx = new VersionedTransaction(messageV0);
 
     // Assume `connection` is a Connection and `transaction` is your built Transaction.
-    const simulationResult = await connection.simulateTransaction(versionedTx, { innerInstructions: true});
+    const simulationResult = await connection.simulateTransaction(versionedTx, { innerInstructions: true });
     edwinLogger.debug('Simulation result: ', JSON.stringify(simulationResult, null, 2));
 
     let tokenAmounts: TokenAmount[] = [];
     if (simulationResult.value.innerInstructions) {
         const innerInstructions = simulationResult.value.innerInstructions as InnerInstruction[];
-        
+
         for (const innerInstruction of innerInstructions) {
             if (innerInstruction.instructions) {
                 for (const instruction of innerInstruction.instructions) {
