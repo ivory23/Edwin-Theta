@@ -1,4 +1,10 @@
-import { Connection, Transaction, TransactionMessage, VersionedTransaction } from '@solana/web3.js';
+import {
+    Connection,
+    ParsedTransactionWithMeta,
+    Transaction,
+    TransactionMessage,
+    VersionedTransaction,
+} from '@solana/web3.js';
 import { BN } from '@coral-xyz/anchor';
 import DLMM from '@meteora-ag/dlmm';
 import edwinLogger from '../../utils/logger';
@@ -113,6 +119,22 @@ export async function calculateAmounts(
     return [totalXAmount, totalYAmount];
 }
 
+export async function getParsedTransactionWithRetries(
+    connection: Connection,
+    signature: string
+): Promise<ParsedTransactionWithMeta> {
+    for (let i = 0; i < 3; i++) {
+        const txInfo = await connection.getParsedTransaction(signature, { maxSupportedTransactionVersion: 0 });
+        if (txInfo) {
+            return txInfo;
+        }
+        if (i < 2) {
+            await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
+        }
+    }
+    throw new Error('Failed to get parsed transaction after 3 attempts');
+}
+
 export async function extractBalanceChanges(
     connection: Connection,
     signature: string,
@@ -122,7 +144,7 @@ export async function extractBalanceChanges(
     const METEORA_DLMM_PROGRAM_ID = 'LBUZKhRxPF3XUpBCjp4YzTKgLccjZhTSDM9YuVaPwxo';
 
     // Fetch the parsed transaction details.
-    const txInfo = await connection.getParsedTransaction(signature, { maxSupportedTransactionVersion: 0 });
+    const txInfo = await getParsedTransactionWithRetries(connection, signature);
 
     if (!txInfo || !txInfo.meta) {
         throw new Error('Transaction details not found or not parsed');
@@ -186,7 +208,7 @@ export async function extractAddLiquidityTokenAmounts(innerInstructions: InnerIn
             for (const instruction of innerInstruction.instructions) {
                 if (instruction.parsed && instruction.parsed.type === 'transferChecked') {
                     edwinLogger.debug(
-                        `Transfer info amounts: ${JSON.stringify(instruction.parsed.info.tokenAmount, null, 2)}`
+                        `Transfer info amounts: ${JSON.stringify(instruction.parsed.info.tokenAmount, null)}`
                     );
                     tokenAmounts.push(instruction.parsed.info.tokenAmount);
                 }
@@ -226,7 +248,7 @@ export async function verifyAddLiquidityTokenAmounts(
     signature: string
 ): Promise<TokenAmount[]> {
     // Fetch the parsed transaction details.
-    const txInfo = await connection.getParsedTransaction(signature, { maxSupportedTransactionVersion: 0 });
+    const txInfo = await getParsedTransactionWithRetries(connection, signature);
 
     if (!txInfo || !txInfo.meta) {
         throw new Error('Transaction details not found or not parsed');

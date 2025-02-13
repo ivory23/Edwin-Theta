@@ -204,6 +204,19 @@ describe('Meteora utils', () => {
                 liquidityRemoved: [0, 20.274523],
                 feesClaimed: [0.000004094, 0.003779],
             });
+
+            const result2 = await extractBalanceChanges(
+                connection,
+                '57FFqxEZqbyfesEcSiMNGsHUTfSzKRvcreqBzJirFWrHHW37YaRvNGd8EfGPVSEzXuQrdZbxZWM4NjBLkFZ7TmVN',
+                tokenXMint,
+                tokenYMint
+            );
+
+            // Test against known values from the transaction
+            expect(result2).toEqual({
+                liquidityRemoved: [0.051702288, 0],
+                feesClaimed: [0.00000511, 0.000032],
+            });
         }, 20000);
 
         it('should handle transaction not found', async () => {

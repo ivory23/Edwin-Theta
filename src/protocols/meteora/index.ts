@@ -54,15 +54,13 @@ export class MeteoraProtocol implements IDEXProtocol {
     public supportedChains: SupportedChain[] = ['solana'];
 
     private wallet: EdwinSolanaWallet;
-    private openPositions: Set<string>;
 
     constructor(wallet: EdwinSolanaWallet) {
         this.wallet = wallet;
-        this.openPositions = new Set<string>();
     }
 
     async getPortfolio(): Promise<string> {
-        return 'Meteora open positions:\n' + Array.from(this.openPositions).join('\n');
+        return '';
     }
 
     async getPositionInfo(positionAddress: string): Promise<Position> {
@@ -158,6 +156,12 @@ export class MeteoraProtocol implements IDEXProtocol {
                 async () => DLMM.create(connection, new PublicKey(poolAddress)),
                 'Meteora create pool'
             );
+            // Wrap the position check in retry logic
+            const positionInfo = await withRetry(
+                async () => dlmmPool.getPositionsByUserAndLbPair(this.wallet.getPublicKey()),
+                'Meteora get user positions'
+            );
+            const existingPosition = positionInfo?.userPositions?.[0];
 
             const activeBin = await withRetry(async () => dlmmPool.getActiveBin(), 'Meteora get active bin');
             const activeBinPricePerToken = dlmmPool.fromPricePerLamport(Number(activeBin.price));
@@ -167,27 +171,24 @@ export class MeteoraProtocol implements IDEXProtocol {
                 activeBinPricePerToken,
                 dlmmPool
             );
+            edwinLogger.debug(`Adding liquidity with Total X amount: ${totalXAmount}, Total Y amount: ${totalYAmount}`);
 
             let tx;
-            let newBalancePosition;
-            edwinLogger.debug(`Opening position with Total X amount: ${totalXAmount}, Total Y amount: ${totalYAmount}`);
-            const rangeInterval = Number(process.env.METEORA_TOTAL_RANGE_INTERVAL) || 10;
-            const minBinId = activeBin.binId - rangeInterval;
-            const maxBinId = activeBin.binId + rangeInterval;
+            let positionPubKey: PublicKey;
+            let signers: Keypair[] = [this.wallet.getSigner()];
 
-            // Wrap the position check in retry logic
-            const positionInfo = await withRetry(
-                async () => dlmmPool.getPositionsByUserAndLbPair(this.wallet.getPublicKey()),
-                'Meteora get user positions'
-            );
-            const existingPosition = positionInfo?.userPositions?.[0];
             if (existingPosition) {
-                throw new Error('Edwin does not support adding liquidity to existing positions');
-            } else {
-                // Create new position
-                newBalancePosition = Keypair.generate();
-                tx = await dlmmPool.initializePositionAndAddLiquidityByStrategy({
-                    positionPubKey: newBalancePosition.publicKey,
+                edwinLogger.debug(`Adding liquidity to existing position`);
+                // Get min and max bin ids from the existing position
+                const binData = existingPosition.positionData.positionBinData;
+                const minBinId = Math.min(...binData.map(bin => bin.binId));
+                const maxBinId = Math.max(...binData.map(bin => bin.binId));
+                positionPubKey = existingPosition.publicKey;
+                // Add liquidity to the existing position
+                await dlmmPool.refetchStates();
+
+                tx = await dlmmPool.addLiquidityByStrategy({
+                    positionPubKey: positionPubKey,
                     user: this.wallet.getPublicKey(),
                     totalXAmount,
                     totalYAmount,
@@ -197,6 +198,29 @@ export class MeteoraProtocol implements IDEXProtocol {
                         strategyType: StrategyType.SpotImBalanced,
                     },
                 });
+            } else {
+                // Create new position
+                let newBalancePosition;
+                edwinLogger.debug(`Opening new position`);
+                const rangeInterval = Number(process.env.METEORA_TOTAL_RANGE_INTERVAL) || 10;
+                const minBinId = activeBin.binId - rangeInterval;
+                const maxBinId = activeBin.binId + rangeInterval;
+
+                newBalancePosition = Keypair.generate();
+                positionPubKey = newBalancePosition.publicKey;
+                await dlmmPool.refetchStates();
+                tx = await dlmmPool.initializePositionAndAddLiquidityByStrategy({
+                    positionPubKey: positionPubKey,
+                    user: this.wallet.getPublicKey(),
+                    totalXAmount,
+                    totalYAmount,
+                    strategy: {
+                        maxBinId,
+                        minBinId,
+                        strategyType: StrategyType.SpotImBalanced,
+                    },
+                });
+                signers.push(newBalancePosition as Keypair);
             }
 
             const simulatedTokenAmounts = await simulateAddLiquidityTransaction(connection, tx, this.wallet);
@@ -208,68 +232,21 @@ export class MeteoraProtocol implements IDEXProtocol {
                     throw new Error('Token amount in transaction simulation is 0, aborting transaction');
                 }
             }
-
-            const signature = await this.wallet.sendTransaction(
-                connection,
-                tx,
-                existingPosition ? [this.wallet.getSigner()] : [this.wallet.getSigner(), newBalancePosition as Keypair]
-            );
+            const signature = await this.wallet.sendTransaction(connection, tx, signers);
             const confirmation = await this.wallet.waitForConfirmationGracefully(connection, signature);
             if (confirmation.err) {
-                throw new Error(`Transaction failed: ${confirmation.err.toString()}`);
+                throw new Error(`Transaction failed: Signature: ${signature}, Error: ${confirmation.err.toString()}`);
             }
-            if (newBalancePosition) {
-                this.openPositions.add(newBalancePosition.publicKey.toString());
-            }
+            edwinLogger.info(`Transaction successful: ${signature}`);
+
             const verifiedTokenAmounts = await verifyAddLiquidityTokenAmounts(connection, signature);
             if (verifiedTokenAmounts.length != 2) {
                 throw new Error('Expected 2 token amounts in tx verification, got ' + verifiedTokenAmounts.length);
             }
-            if (
-                verifiedTokenAmounts[0].uiAmount < simulatedTokenAmounts[0].uiAmount ||
-                verifiedTokenAmounts[1].uiAmount < simulatedTokenAmounts[1].uiAmount
-            ) {
+            if (verifiedTokenAmounts[0].uiAmount == 0 || verifiedTokenAmounts[1].uiAmount == 0) {
                 edwinLogger.info('Encounted a statistical bug where not all of the liquidity was added to the pool');
-                let remainingXAmount = new BN(simulatedTokenAmounts[0].amount).sub(
-                    new BN(verifiedTokenAmounts[0].amount)
-                );
-                let remainingYAmount = new BN(simulatedTokenAmounts[1].amount).sub(
-                    new BN(verifiedTokenAmounts[1].amount)
-                );
-                while (remainingXAmount.gt(new BN(0)) || remainingYAmount.gt(new BN(0))) {
-                    edwinLogger.info(
-                        `Supplying remaining liquidity to the pool: ${remainingXAmount.toString()} and ${remainingYAmount.toString()}`
-                    );
-                    const addLiquidityTx = await dlmmPool.addLiquidityByStrategy({
-                        positionPubKey: newBalancePosition.publicKey,
-                        user: this.wallet.getPublicKey(),
-                        totalXAmount: remainingXAmount,
-                        totalYAmount: remainingYAmount,
-                        strategy: {
-                            maxBinId: activeBin.binId + rangeInterval,
-                            minBinId: activeBin.binId - rangeInterval,
-                            strategyType: StrategyType.SpotImBalanced,
-                        },
-                    });
-                    const signature = await this.wallet.sendTransaction(connection, addLiquidityTx, [
-                        this.wallet.getSigner(),
-                    ]);
-                    const confirmation = await this.wallet.waitForConfirmationGracefully(connection, signature);
-                    if (confirmation.err) {
-                        throw new Error(`Transaction failed: ${confirmation.err.toString()}`);
-                    }
-                    const verifiedTokenAmounts = await verifyAddLiquidityTokenAmounts(connection, signature);
-                    if (verifiedTokenAmounts.length != 2) {
-                        throw new Error(
-                            'Expected 2 token amounts in tx verification, got ' + verifiedTokenAmounts.length
-                        );
-                    }
-                    remainingXAmount = remainingXAmount.sub(new BN(verifiedTokenAmounts[0].amount));
-                    remainingYAmount = remainingYAmount.sub(new BN(verifiedTokenAmounts[1].amount));
-                }
             }
-
-            return { liquidityAdded: [simulatedTokenAmounts[0].uiAmount, simulatedTokenAmounts[1].uiAmount] };
+            return { liquidityAdded: [verifiedTokenAmounts[0].uiAmount, verifiedTokenAmounts[1].uiAmount] };
         } catch (error: unknown) {
             if (error instanceof SendTransactionError) {
                 const logs = await error.getLogs(this.wallet.getConnection());
@@ -374,14 +351,13 @@ Fees claimed:
             for (let tx of Array.isArray(removeLiquidityTx) ? removeLiquidityTx : [removeLiquidityTx]) {
                 const signature = await this.wallet.sendTransaction(connection, tx, [this.wallet.getSigner()]);
                 await this.wallet.waitForConfirmationGracefully(connection, signature);
+                edwinLogger.info(`Transaction successful: ${signature}`);
                 const balanceChanges = await extractBalanceChanges(connection, signature, tokenXAddress, tokenYAddress);
                 liquidityRemoved[0] += balanceChanges.liquidityRemoved[0];
                 liquidityRemoved[1] += balanceChanges.liquidityRemoved[1];
                 feesClaimed[0] += balanceChanges.feesClaimed[0];
                 feesClaimed[1] += balanceChanges.feesClaimed[1];
             }
-            // Remove position from tracked open positions
-            this.openPositions.delete(userPositions[0].publicKey.toString());
             return { liquidityRemoved, feesClaimed };
         } catch (error: unknown) {
             edwinLogger.error('Meteora remove liquidity error:', error);
