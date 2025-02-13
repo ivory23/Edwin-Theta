@@ -29,7 +29,7 @@ describe('Meteora test', () => {
         expect(results.length).toBe(10);
     }, 30000); // 30 second timeout
 
-    it('test meteora getPositions - note - need to use a paid RPC', async () => {
+    it('test meteora getPositions - note - need to use a paid RPC for this test', async () => {
         const positions = await edwin.actions.getPositions.execute({
             protocol: 'meteora',
             chain: 'solana',
