@@ -14,7 +14,7 @@ import { EdwinSolanaWallet } from '../src/edwin-core/wallets/solana_wallet/solan
 describe('Meteora test', () => {
     const edwinConfig: EdwinConfig = {
         solanaPrivateKey: process.env.SOLANA_PRIVATE_KEY,
-        actions: ['getPositions', 'getPools', 'addLiquidity', 'removeLiquidity'],
+        actions: ['getPositions', 'getPools', 'addLiquidity', 'removeLiquidity', 'getPositionsFromPool'],
     };
     const edwin = new Edwin(edwinConfig);
 
@@ -60,14 +60,14 @@ describe('Meteora test', () => {
         edwinLogger.info('🚀 ~ it ~ result:', result);
 
         // Get positions after adding liquidity
-        const positions = await edwin.actions.getPositions.execute({
+        const positions = await edwin.actions.getPositionsFromPool.execute({
             protocol: 'meteora',
             chain: 'solana',
+            poolAddress: topPoolAddress,
         });
         // Check that positions is ok - should be 1 position
         expect(positions).toBeDefined();
-        expect(positions.size).toBe(1);
-        const positionKey = positions.keys().toArray()[0];
+        expect(positions.length).toBe(1);
     }, 120000); // 120 second timeout
 
     it('test meteora remove liquidity', async () => {
@@ -93,21 +93,22 @@ describe('Meteora test', () => {
         edwinLogger.info('🚀 ~ it ~ removeLiquidity result:', result);
 
         // Check positions after removal
-        const positionsAfter = await edwin.actions.getPositions.execute({
+        const positionsAfter = await edwin.actions.getPositionsFromPool.execute({
             protocol: 'meteora',
             chain: 'solana',
+            poolAddress: poolAddress,
         });
         edwinLogger.info('🚀 ~ it ~ positions after removal:', positionsAfter);
 
         // Verify position was closed
-        expect(positionsAfter.size).toBe(positions.size - 1);
+        expect(positionsAfter.length).toBe(positions.size - 1);
     }, 60000); // 60 second timeout
 });
 
 describe('Meteora utils', () => {
     const edwinConfig: EdwinConfig = {
         solanaPrivateKey: process.env.SOLANA_PRIVATE_KEY,
-        actions: ['getPositions', 'getPools', 'addLiquidity', 'removeLiquidity'],
+        actions: ['getPositions', 'getPools', 'addLiquidity', 'removeLiquidity', 'getPositionsFromPool'],
     };
     const edwin = new Edwin(edwinConfig);
 

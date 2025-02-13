@@ -1,6 +1,6 @@
 import { IDEXProtocol, LiquidityParams, SupportedChain } from '../../types';
 import { EdwinSolanaWallet } from '../../edwin-core/wallets/solana_wallet/solana_wallet';
-import DLMM, { StrategyType, BinLiquidity, PositionData } from '@meteora-ag/dlmm';
+import DLMM, { StrategyType, BinLiquidity, PositionData, LbPosition } from '@meteora-ag/dlmm';
 import { Keypair, PublicKey } from '@solana/web3.js';
 import { BN } from '@coral-xyz/anchor';
 import edwinLogger from '../../utils/logger';
@@ -104,6 +104,20 @@ export class MeteoraProtocol implements IDEXProtocol {
             current_price: pool.current_price,
             apr_percentage: pool.apr,
         }));
+    }
+
+    async getPositionsFromPool(params: LiquidityParams): Promise<Array<LbPosition>> {
+        const { poolAddress } = params;
+        if (!poolAddress) {
+            throw new Error('Pool address is required for Meteora getPositionsFromPool');
+        }
+        const connection = this.wallet.getConnection();
+        const dlmmPool = await DLMM.create(connection, new PublicKey(poolAddress));
+        const { userPositions } = await withRetry(
+            async () => dlmmPool.getPositionsByUserAndLbPair(this.wallet.getPublicKey()),
+            'Meteora get user positions'
+        );
+        return userPositions;
     }
 
     async getPositions(params: LiquidityParams): Promise<any> {
@@ -264,14 +278,16 @@ export class MeteoraProtocol implements IDEXProtocol {
                 } catch (error) {
                     if (error instanceof MeteoraStatisticalBugError) {
                         attempts++;
-                        edwinLogger.info(`Attempt ${attempts}: Encountered Meteora statistical bug, closing position and retrying...`);
-                        
+                        edwinLogger.info(
+                            `Attempt ${attempts}: Encountered Meteora statistical bug, closing position and retrying...`
+                        );
+
                         if (attempts < MAX_ATTEMPTS) {
                             // Close the position before retrying
                             await this.removeLiquidity({
                                 chain: 'solana',
                                 poolAddress,
-                                shouldClosePosition: true
+                                shouldClosePosition: true,
                             });
                             continue;
                         }
@@ -279,7 +295,7 @@ export class MeteoraProtocol implements IDEXProtocol {
                     throw error;
                 }
             }
-            
+
             throw new Error(`Failed to add liquidity after ${MAX_ATTEMPTS} attempts due to statistical bug`);
         } catch (error: unknown) {
             edwinLogger.error('Meteora add liquidity error:', error);
