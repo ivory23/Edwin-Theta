@@ -254,8 +254,33 @@ export class MeteoraProtocol implements IDEXProtocol {
                 throw new Error('Meteora protocol only supports Solana');
             }
 
-            const result = await this.innerAddLiquidity(poolAddress, amount, amountB);
-            return result;
+            let attempts = 0;
+            const MAX_ATTEMPTS = 3;
+
+            while (attempts < MAX_ATTEMPTS) {
+                try {
+                    const result = await this.innerAddLiquidity(poolAddress, amount, amountB);
+                    return result;
+                } catch (error) {
+                    if (error instanceof MeteoraStatisticalBugError) {
+                        attempts++;
+                        edwinLogger.info(`Attempt ${attempts}: Encountered Meteora statistical bug, closing position and retrying...`);
+                        
+                        if (attempts < MAX_ATTEMPTS) {
+                            // Close the position before retrying
+                            await this.removeLiquidity({
+                                chain: 'solana',
+                                poolAddress,
+                                shouldClosePosition: true
+                            });
+                            continue;
+                        }
+                    }
+                    throw error;
+                }
+            }
+            
+            throw new Error(`Failed to add liquidity after ${MAX_ATTEMPTS} attempts due to statistical bug`);
         } catch (error: unknown) {
             edwinLogger.error('Meteora add liquidity error:', error);
             const message = error instanceof Error ? error.message : String(error);
