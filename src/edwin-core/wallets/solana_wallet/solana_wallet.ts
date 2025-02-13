@@ -55,7 +55,7 @@ export class EdwinSolanaWallet extends EdwinWallet {
         return token ? token.address : null;
     }
 
-    async getBalance(symbol?: string): Promise<number> {
+    async getBalance(symbol: string = 'SOL'): Promise<number> {
         const connection = this.getConnection();
         if (!symbol || symbol.toLowerCase() === 'sol') {
             // Get SOL balance
