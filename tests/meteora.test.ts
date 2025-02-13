@@ -24,10 +24,12 @@ describe('Meteora test', () => {
             assetB: 'usdc',
             protocol: 'meteora',
         });
-        edwinLogger.info('🚀 ~ it ~ getPools result:', results);
+        expect(results).toBeDefined();
+        expect(results).toBeInstanceOf(Array);
+        expect(results.length).toBe(10);
     }, 30000); // 30 second timeout
 
-    it('test meteora getPositions - note - need to use a paid RPC', async () => {
+    it('test meteora getPositions - note - need to use a paid RPC for this test', async () => {
         const positions = await edwin.actions.getPositions.execute({
             protocol: 'meteora',
             chain: 'solana',
@@ -41,7 +43,6 @@ describe('Meteora test', () => {
             assetB: 'usdc',
             protocol: 'meteora',
         });
-        edwinLogger.info('🚀 ~ it ~ result:', results);
         const topPoolAddress = results[0].address;
 
         const result = await edwin.actions.addLiquidity.execute({
@@ -51,6 +52,11 @@ describe('Meteora test', () => {
             protocol: 'meteora',
             chain: 'solana',
         });
+        // Verify liquidity was added correctly
+        expect(result.liquidityAdded).toBeDefined();
+        expect(result.liquidityAdded).toHaveLength(2);
+        expect(result.liquidityAdded[1]).toBeCloseTo(2, 1); // Verify USDC amount is approximately 2
+        expect(result.liquidityAdded[0]).toBeGreaterThan(0); // Verify SOL amount is non-zero
         edwinLogger.info('🚀 ~ it ~ result:', result);
 
         // Get positions after adding liquidity
@@ -58,13 +64,10 @@ describe('Meteora test', () => {
             protocol: 'meteora',
             chain: 'solana',
         });
-        edwinLogger.info('🚀 ~ it ~ positions:', positions);
-
         // Check that positions is ok - should be 1 position
         expect(positions).toBeDefined();
         expect(positions.size).toBe(1);
         const positionKey = positions.keys().toArray()[0];
-        edwinLogger.info('🚀 ~ it ~ positions:', positionKey);
     }, 120000); // 120 second timeout
 
     it('test meteora remove liquidity', async () => {
@@ -201,13 +204,26 @@ describe('Meteora utils', () => {
                 liquidityRemoved: [0, 20.274523],
                 feesClaimed: [0.000004094, 0.003779],
             });
-        });
+
+            const result2 = await extractBalanceChanges(
+                connection,
+                '57FFqxEZqbyfesEcSiMNGsHUTfSzKRvcreqBzJirFWrHHW37YaRvNGd8EfGPVSEzXuQrdZbxZWM4NjBLkFZ7TmVN',
+                tokenXMint,
+                tokenYMint
+            );
+
+            // Test against known values from the transaction
+            expect(result2).toEqual({
+                liquidityRemoved: [0.051702288, 0],
+                feesClaimed: [0.00000511, 0.000032],
+            });
+        }, 20000);
 
         it('should handle transaction not found', async () => {
             const connection = (edwin.wallets['solana'] as EdwinSolanaWallet).getConnection();
             await expect(
                 extractBalanceChanges(connection, 'invalid_signature', 'token_x_address', 'token_y_address')
             ).rejects.toThrow(Error);
-        });
+        }, 20000);
     });
 });

@@ -1,10 +1,48 @@
-import { Connection } from '@solana/web3.js';
+import {
+    Connection,
+    ParsedTransactionWithMeta,
+    Transaction,
+    TransactionMessage,
+    VersionedTransaction,
+} from '@solana/web3.js';
 import { BN } from '@coral-xyz/anchor';
 import DLMM from '@meteora-ag/dlmm';
 import edwinLogger from '../../utils/logger';
+import { EdwinSolanaWallet } from '../../edwin-core/wallets/solana_wallet/solana_wallet';
 
 const MAX_RETRIES = 3;
 const INITIAL_DELAY = 1000; // 1 second
+
+interface ParsedInstruction {
+    parsed?: {
+        type: string;
+        info: {
+            amount: string;
+            authority: string;
+            destination: string;
+            mint: string;
+            source: string;
+            tokenAmount: {
+                amount: string;
+                decimals: number;
+                uiAmount: number;
+                uiAmountString: string;
+            };
+        };
+    };
+}
+
+interface InnerInstruction {
+    index: number;
+    instructions: ParsedInstruction[];
+}
+
+interface TokenAmount {
+    amount: string;
+    decimals: number;
+    uiAmount: number;
+    uiAmountString: string;
+}
 
 async function withRetry<T>(operation: () => Promise<T>, context: string): Promise<T> {
     let lastError: Error;
@@ -81,6 +119,22 @@ export async function calculateAmounts(
     return [totalXAmount, totalYAmount];
 }
 
+export async function getParsedTransactionWithRetries(
+    connection: Connection,
+    signature: string
+): Promise<ParsedTransactionWithMeta> {
+    for (let i = 0; i < 3; i++) {
+        const txInfo = await connection.getParsedTransaction(signature, { maxSupportedTransactionVersion: 0 });
+        if (txInfo) {
+            return txInfo;
+        }
+        if (i < 2) {
+            await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
+        }
+    }
+    throw new Error('Failed to get parsed transaction after 3 attempts');
+}
+
 export async function extractBalanceChanges(
     connection: Connection,
     signature: string,
@@ -90,7 +144,7 @@ export async function extractBalanceChanges(
     const METEORA_DLMM_PROGRAM_ID = 'LBUZKhRxPF3XUpBCjp4YzTKgLccjZhTSDM9YuVaPwxo';
 
     // Fetch the parsed transaction details.
-    const txInfo = await connection.getParsedTransaction(signature, { maxSupportedTransactionVersion: 0 });
+    const txInfo = await getParsedTransactionWithRetries(connection, signature);
 
     if (!txInfo || !txInfo.meta) {
         throw new Error('Transaction details not found or not parsed');
@@ -145,4 +199,63 @@ export async function extractBalanceChanges(
         liquidityRemoved: [liquidityRemovedA, liquidityRemovedB],
         feesClaimed: [feesClaimedA, feesClaimedB],
     };
+}
+
+export async function extractAddLiquidityTokenAmounts(innerInstructions: InnerInstruction[]): Promise<TokenAmount[]> {
+    let tokenAmounts: TokenAmount[] = [];
+    for (const innerInstruction of innerInstructions) {
+        if (innerInstruction.instructions) {
+            for (const instruction of innerInstruction.instructions) {
+                if (instruction.parsed && instruction.parsed.type === 'transferChecked') {
+                    edwinLogger.debug(
+                        `Transfer info amounts: ${JSON.stringify(instruction.parsed.info.tokenAmount, null)}`
+                    );
+                    tokenAmounts.push(instruction.parsed.info.tokenAmount);
+                }
+            }
+        }
+    }
+    return tokenAmounts;
+}
+
+export async function simulateAddLiquidityTransaction(
+    connection: Connection,
+    tx: Transaction,
+    wallet: EdwinSolanaWallet
+): Promise<TokenAmount[]> {
+    // Convert to versioned transaction
+    const latestBlockhash = await connection.getLatestBlockhash();
+    const messageV0 = new TransactionMessage({
+        payerKey: wallet.getPublicKey(),
+        recentBlockhash: latestBlockhash.blockhash,
+        instructions: tx.instructions,
+    }).compileToV0Message();
+    const versionedTx = new VersionedTransaction(messageV0);
+
+    // Assume `connection` is a Connection and `transaction` is your built Transaction.
+    const simulationResult = await connection.simulateTransaction(versionedTx, { innerInstructions: true });
+
+    const innerInstructions = simulationResult.value.innerInstructions;
+    if (!innerInstructions) {
+        throw new Error('Inner instructions not found in simulation result');
+    }
+
+    return extractAddLiquidityTokenAmounts(innerInstructions as InnerInstruction[]);
+}
+
+export async function verifyAddLiquidityTokenAmounts(
+    connection: Connection,
+    signature: string
+): Promise<TokenAmount[]> {
+    // Fetch the parsed transaction details.
+    const txInfo = await getParsedTransactionWithRetries(connection, signature);
+
+    if (!txInfo || !txInfo.meta) {
+        throw new Error('Transaction details not found or not parsed');
+    }
+
+    const innerInstructions = txInfo.meta.innerInstructions || [];
+    const tokenAmounts = await extractAddLiquidityTokenAmounts(innerInstructions as InnerInstruction[]);
+
+    return tokenAmounts;
 }

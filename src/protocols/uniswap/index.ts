@@ -19,7 +19,7 @@ export class UniswapProtocol implements IDEXProtocol {
         throw new Error(`Not implemented. Params: ${chain} ${asset} ${amount} ${assetB} ${amountB}`);
     }
 
-    async addLiquidity(params: LiquidityParams): Promise<string> {
+    async addLiquidity(params: LiquidityParams): Promise<{ liquidityAdded: [number, number] }> {
         const { chain, asset, amount, assetB, amountB } = params;
 
         throw new Error(`Not implemented. Params: ${chain} ${asset} ${amount} ${assetB} ${amountB}`);
