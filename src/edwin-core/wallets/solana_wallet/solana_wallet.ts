@@ -12,12 +12,11 @@ import { TokenListProvider } from '@solana/spl-token-registry';
 import { EdwinWallet } from '../wallet';
 import { JitoJsonRpcClient } from './jito_client';
 import edwinLogger from '../../../utils/logger';
+import { InsufficientBalanceError } from '../../../errors';
 
 export class EdwinSolanaWallet extends EdwinWallet {
     private wallet: Keypair;
     private wallet_address: PublicKey;
-    // You can override this default fee (in microLamports) by setting the env variable JITO_PRIORITY_FEE
-    private static readonly DEFAULT_PRIORITY_FEE = 10_000;
 
     constructor(protected privateKey: string) {
         super();
@@ -56,10 +55,9 @@ export class EdwinSolanaWallet extends EdwinWallet {
         return token ? token.address : null;
     }
 
-    async getBalance(symbol?: string): Promise<number> {
+    async getBalance(symbol: string = 'SOL'): Promise<number> {
         const connection = this.getConnection();
-        if (!symbol) {
-            // Get SOL balance
+        if (symbol.toLowerCase() === 'sol') {
             return (await connection.getBalance(this.wallet_address)) / LAMPORTS_PER_SOL;
         }
 
@@ -225,5 +223,12 @@ export class EdwinSolanaWallet extends EdwinWallet {
             actualOutputAmount = postBalance - preBalance;
         }
         return actualOutputAmount;
+    }
+
+    async verifyBalance(symbol: string, amount: number): Promise<void> {
+        const balance = await this.getBalance(symbol);
+        if (balance < amount) {
+            throw new InsufficientBalanceError(amount, balance, symbol);
+        }
     }
 }
