@@ -59,6 +59,7 @@ describe('Meteora test', () => {
         expect(result.liquidityAdded[0]).toBeGreaterThan(0); // Verify SOL amount is non-zero
         edwinLogger.info('🚀 ~ it ~ result:', result);
 
+        const positionAddress = result.positionAddress;
         // Get positions after adding liquidity
         const positions = await edwin.actions.getPositionsFromPool.execute({
             protocol: 'meteora',
@@ -68,6 +69,7 @@ describe('Meteora test', () => {
         // Check that positions is ok - should be 1 position
         expect(positions).toBeDefined();
         expect(positions.length).toBe(1);
+        expect(positions[0].publicKey).toBe(positionAddress);
     }, 120000); // 120 second timeout
 
     it('test meteora remove liquidity', async () => {
