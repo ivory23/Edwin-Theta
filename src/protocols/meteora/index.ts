@@ -1,6 +1,6 @@
 import { IDEXProtocol, LiquidityParams, SupportedChain } from '../../types';
 import { EdwinSolanaWallet } from '../../edwin-core/wallets/solana_wallet/solana_wallet';
-import DLMM, { StrategyType, BinLiquidity, PositionData } from '@meteora-ag/dlmm';
+import DLMM, { StrategyType, BinLiquidity, PositionData, LbPosition } from '@meteora-ag/dlmm';
 import { Keypair, PublicKey } from '@solana/web3.js';
 import { BN } from '@coral-xyz/anchor';
 import edwinLogger from '../../utils/logger';
@@ -106,6 +106,20 @@ export class MeteoraProtocol implements IDEXProtocol {
         }));
     }
 
+    async getPositionsFromPool(params: LiquidityParams): Promise<Array<LbPosition>> {
+        const { poolAddress } = params;
+        if (!poolAddress) {
+            throw new Error('Pool address is required for Meteora getPositionsFromPool');
+        }
+        const connection = this.wallet.getConnection();
+        const dlmmPool = await DLMM.create(connection, new PublicKey(poolAddress));
+        const { userPositions } = await withRetry(
+            async () => dlmmPool.getPositionsByUserAndLbPair(this.wallet.getPublicKey()),
+            'Meteora get user positions'
+        );
+        return userPositions;
+    }
+
     async getPositions(params: LiquidityParams): Promise<any> {
         try {
             edwinLogger.info('GetPositions params: ', params);
@@ -139,7 +153,7 @@ export class MeteoraProtocol implements IDEXProtocol {
         poolAddress: string,
         amount: string,
         amountB: string
-    ): Promise<{ liquidityAdded: [number, number] }> {
+    ): Promise<{ positionAddress: string; liquidityAdded: [number, number] }> {
         const connection = this.wallet.getConnection();
         const dlmmPool = await withRetry(
             async () => DLMM.create(connection, new PublicKey(poolAddress)),
@@ -234,10 +248,15 @@ export class MeteoraProtocol implements IDEXProtocol {
             edwinLogger.info('Encountered a statistical bug where not all of the liquidity was added to the pool');
             throw new MeteoraStatisticalBugError('Meteora statistical bug');
         }
-        return { liquidityAdded: [verifiedTokenAmounts[0].uiAmount, verifiedTokenAmounts[1].uiAmount] };
+        return {
+            positionAddress: positionPubKey.toString(),
+            liquidityAdded: [verifiedTokenAmounts[0].uiAmount, verifiedTokenAmounts[1].uiAmount],
+        };
     }
 
-    async addLiquidity(params: LiquidityParams): Promise<{ liquidityAdded: [number, number] }> {
+    async addLiquidity(
+        params: LiquidityParams
+    ): Promise<{ positionAddress: string; liquidityAdded: [number, number] }> {
         const { chain, amount, amountB, poolAddress } = params;
         edwinLogger.info(
             `Calling Meteora protocol to add liquidity to pool ${poolAddress} with ${amount} and ${amountB}`
@@ -254,8 +273,38 @@ export class MeteoraProtocol implements IDEXProtocol {
                 throw new Error('Meteora protocol only supports Solana');
             }
 
-            const result = await this.innerAddLiquidity(poolAddress, amount, amountB);
-            return result;
+            let attempts = 0;
+            const MAX_ATTEMPTS = 3;
+            let result: { positionAddress: string, liquidityAdded: [number, number] } | undefined;
+            while (attempts < MAX_ATTEMPTS) {
+                try {
+                    result = await this.innerAddLiquidity(poolAddress, amount, amountB);
+                    return result;
+                } catch (error) {
+                    if (error instanceof MeteoraStatisticalBugError) {
+                        attempts++;
+                        edwinLogger.info(
+                            `Attempt ${attempts}: Encountered Meteora statistical bug, closing position and retrying...`
+                        );
+
+                        if (attempts < MAX_ATTEMPTS && result?.positionAddress) {
+                            await withRetry(
+                                async () => this.removeLiquidity({
+                                    chain: 'solana',
+                                    poolAddress,
+                                    shouldClosePosition: true,
+                                    positionAddress: result!.positionAddress,
+                                }),
+                                'Meteora remove liquidity'
+                            );   
+                        }
+                        continue;
+                    }
+                    throw error;
+                }
+            }
+
+            throw new Error(`Failed to add liquidity after ${MAX_ATTEMPTS} attempts due to statistical bug`);
         } catch (error: unknown) {
             edwinLogger.error('Meteora add liquidity error:', error);
             const message = error instanceof Error ? error.message : String(error);
@@ -310,7 +359,7 @@ Fees claimed:
     }
 
     async removeLiquidity(params: any): Promise<{ liquidityRemoved: [number, number]; feesClaimed: [number, number] }> {
-        const { chain, poolAddress, shouldClosePosition } = params;
+        const { chain, poolAddress, positionAddress, shouldClosePosition } = params;
         try {
             if (chain !== 'solana') {
                 throw new Error('Meteora protocol only supports Solana');
@@ -326,21 +375,30 @@ Fees claimed:
                 'Meteora create pool'
             );
 
-            const positionInfo = await withRetry(
-                async () => dlmmPool.getPositionsByUserAndLbPair(this.wallet.getPublicKey()),
-                'Meteora get user positions'
-            );
-            const userPositions = positionInfo?.userPositions;
-            if (!userPositions || userPositions.length === 0) {
-                throw new Error('No positions found in this pool');
+            let position: LbPosition;
+            if (!positionAddress) {
+                const positionInfo = await withRetry(
+                    async () => dlmmPool.getPositionsByUserAndLbPair(this.wallet.getPublicKey()),
+                    'Meteora get user positions'
+                );
+                const userPositions = positionInfo?.userPositions;
+                if (!userPositions || userPositions.length === 0) {
+                    throw new Error('No positions found in this pool');
+                }
+                // Get just the first position. Can be expanded in the future
+                position = userPositions[0];
+            } else {
+                position = await withRetry(
+                    async () => dlmmPool.getPosition(new PublicKey(positionAddress)),
+                    'Meteora get position'
+                );
             }
-            ``;
-            // Get just the first position. Can be expanded in the future
-            const binData = userPositions[0].positionData.positionBinData;
+
+            const binData = position.positionData.positionBinData;
             const binIdsToRemove = binData.map(bin => bin.binId);
             // Remove 100% of liquidity from all bins
             const removeLiquidityTx = await dlmmPool.removeLiquidity({
-                position: userPositions[0].publicKey,
+                position: position.publicKey,
                 user: this.wallet.getPublicKey(),
                 binIds: binIdsToRemove,
                 bps: new BN(100 * 100), // 100%

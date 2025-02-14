@@ -88,6 +88,7 @@ export interface IDEXProtocol extends DeFiProtocol {
     removeLiquidity(params: any): Promise<{ liquidityRemoved: [number, number]; feesClaimed: [number, number] }>;
     getPools?(params: any): Promise<any>;
     getPositions?(params: any): Promise<any>;
+    getPositionsFromPool?(params: any): Promise<any>;
     getActiveBin?(params: any): Promise<any>;
     getPortfolio(): Promise<string>;
 }

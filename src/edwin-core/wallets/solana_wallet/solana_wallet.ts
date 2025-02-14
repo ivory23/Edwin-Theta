@@ -57,7 +57,8 @@ export class EdwinSolanaWallet extends EdwinWallet {
 
     async getBalance(symbol: string = 'SOL'): Promise<number> {
         const connection = this.getConnection();
-        if (symbol.toLowerCase() === 'sol') {
+        if (!symbol || symbol.toLowerCase() === 'sol') {
+            // Get SOL balance
             return (await connection.getBalance(this.wallet_address)) / LAMPORTS_PER_SOL;
         }
 
@@ -100,7 +101,6 @@ export class EdwinSolanaWallet extends EdwinWallet {
                 if (value.err) {
                     throw new Error(`Transaction failed: ${JSON.stringify(value.err)}`);
                 }
-
                 if (value.confirmationStatus === 'confirmed' || value.confirmationStatus === 'finalized') {
                     return value; // Transaction is confirmed or finalized
                 }
