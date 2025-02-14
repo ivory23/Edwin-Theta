@@ -88,7 +88,7 @@ export async function getParsedTransactionWithRetries(
     connection: Connection,
     signature: string
 ): Promise<ParsedTransactionWithMeta> {
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 5; i++) {
         const txInfo = await connection.getParsedTransaction(signature, { maxSupportedTransactionVersion: 0 });
         if (txInfo) {
             return txInfo;
