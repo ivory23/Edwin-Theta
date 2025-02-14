@@ -10,8 +10,6 @@ import DLMM from '@meteora-ag/dlmm';
 import edwinLogger from '../../utils/logger';
 import { EdwinSolanaWallet } from '../../edwin-core/wallets/solana_wallet/solana_wallet';
 
-const MAX_RETRIES = 3;
-const INITIAL_DELAY = 1000; // 1 second
 
 interface ParsedInstruction {
     parsed?: {
@@ -43,38 +41,6 @@ interface TokenAmount {
     uiAmount: number;
     uiAmountString: string;
 }
-
-async function withRetry<T>(operation: () => Promise<T>, context: string): Promise<T> {
-    let lastError: Error;
-    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
-        try {
-            return await operation();
-        } catch (error: unknown) {
-            lastError = error as Error;
-            const isTimeout =
-                error instanceof Error &&
-                (error.message.toLowerCase().includes('timeout') ||
-                    error.message.toLowerCase().includes('connectionerror'));
-
-            if (!isTimeout) {
-                throw error;
-            }
-
-            if (attempt === MAX_RETRIES) {
-                edwinLogger.error(`${context} failed after ${MAX_RETRIES} attempts:`, error);
-                throw new Error(`${context} failed after ${MAX_RETRIES} retries: ${lastError.message}`);
-            }
-
-            const delay = INITIAL_DELAY * attempt;
-            edwinLogger.warn(`${context} attempt ${attempt} failed, retrying in ${delay}ms:`, error);
-            await new Promise(resolve => setTimeout(resolve, delay));
-        }
-    }
-    // lastError will always be defined here since we must have caught at least one error to reach this point
-    throw lastError!;
-}
-
-export { withRetry };
 
 export async function calculateAmounts(
     amount: string,
