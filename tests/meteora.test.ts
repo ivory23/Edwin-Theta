@@ -69,7 +69,7 @@ describe('Meteora test', () => {
         // Check that positions is ok - should be 1 position
         expect(positions).toBeDefined();
         expect(positions.length).toBe(1);
-        expect(positions[0].publicKey).toBe(positionAddress);
+        expect(positions[0].publicKey.toString()).toBe(positionAddress);
     }, 120000); // 120 second timeout
 
     it('test meteora remove liquidity', async () => {
