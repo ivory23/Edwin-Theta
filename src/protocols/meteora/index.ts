@@ -7,10 +7,10 @@ import edwinLogger from '../../utils/logger';
 import {
     calculateAmounts,
     extractBalanceChanges,
-    withRetry,
     simulateAddLiquidityTransaction,
     verifyAddLiquidityTokenAmounts,
 } from './utils';
+import { withRetry } from '../../utils';
 import { MeteoraStatisticalBugError } from '../../errors';
 
 interface MeteoraPoolResult {

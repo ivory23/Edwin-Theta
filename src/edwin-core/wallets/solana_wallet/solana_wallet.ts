@@ -13,6 +13,7 @@ import { EdwinWallet } from '../wallet';
 import { JitoJsonRpcClient } from './jito_client';
 import edwinLogger from '../../../utils/logger';
 import { InsufficientBalanceError } from '../../../errors';
+import { withRetry } from '../../../utils';
 
 export class EdwinSolanaWallet extends EdwinWallet {
     private wallet: Keypair;
@@ -190,7 +191,10 @@ export class EdwinSolanaWallet extends EdwinWallet {
         }
         const connection = this.getConnection();
         // Fetch the parsed transaction details (make sure to set the proper options)
-        const txInfo = await connection.getParsedTransaction(signature, { maxSupportedTransactionVersion: 0 });
+        const txInfo = await withRetry(
+            () => connection.getParsedTransaction(signature, { maxSupportedTransactionVersion: 0 }),
+            'Get parsed transaction'
+        );
         if (!txInfo || !txInfo.meta) {
             throw new Error('Could not fetch transaction details');
         }

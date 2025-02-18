@@ -1,6 +1,7 @@
 import { ISwapProtocol, SupportedChain } from '../../types';
 import { PublicKey, VersionedTransaction } from '@solana/web3.js';
 import { EdwinSolanaWallet } from '../../edwin-core/wallets/solana_wallet/solana_wallet';
+import { withRetry } from '../../utils';
 
 interface JupiterQuoteParams {
     inputMint: string;
@@ -149,7 +150,10 @@ export class JupiterProtocol implements ISwapProtocol {
         //    - For SPL tokens, check the token account balance changes.
         let actualOutputAmount: number;
         // Fetch the parsed transaction details (make sure to set the proper options)
-        const txInfo = await connection.getParsedTransaction(signature, { maxSupportedTransactionVersion: 0 });
+        const txInfo = await withRetry(
+            () => connection.getParsedTransaction(signature, { maxSupportedTransactionVersion: 0 }),
+            'Get parsed transaction'
+        );
         if (!txInfo || !txInfo.meta) {
             throw new Error('Could not fetch transaction details');
         }
