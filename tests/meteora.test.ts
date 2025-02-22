@@ -5,10 +5,10 @@ import { describe, expect, it } from 'vitest';
 import { Edwin, EdwinConfig } from '../src';
 import { safeJsonStringify } from '../src/utils';
 import edwinLogger from '../src/utils/logger';
-import { calculateAmounts, extractBalanceChanges } from '../src/protocols/meteora/utils';
+import { calculateAmounts, extractBalanceChanges } from '../src/plugins/meteora/utils';
 import DLMM from '@meteora-ag/dlmm';
 import { BN } from '@coral-xyz/anchor';
-import { EdwinSolanaWallet } from '../src/edwin-core/wallets/solana_wallet/solana_wallet';
+import { EdwinSolanaWallet } from '../src/core/wallets/solana_wallet/solana_wallet';
 
 // Meteora test
 describe('Meteora test', () => {
@@ -30,7 +30,7 @@ describe('Meteora test', () => {
     }, 30000); // 30 second timeout
 
     it('test meteora getPositions - note - need to use a paid RPC for this test', async () => {
-        const positions = await edwin.actions.getPositions.execute({
+        const positions = await edwin.plugins.meteora.getPositions.execute({
             protocol: 'meteora',
             chain: 'solana',
         });

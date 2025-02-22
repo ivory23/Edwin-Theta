@@ -1,5 +1,5 @@
 import { config } from 'dotenv';
-config(); // Load test environment variables from .env file
+config();
 
 import { describe, expect, it } from 'vitest';
 import { Edwin, EdwinConfig } from '../src';
@@ -7,14 +7,14 @@ import { Edwin, EdwinConfig } from '../src';
 describe('Jupiter Swap Test', () => {
     const edwinConfig: EdwinConfig = {
         solanaPrivateKey: process.env.SOLANA_PRIVATE_KEY,
-        actions: ['swap'],
+        plugins: ['jupiter'],
     };
     const edwin = new Edwin(edwinConfig);
 
     it('should swap USDC to SOL and back', async () => {
         // Initial balances
-        const initialSolBalance = await edwin.getBalance('solana');
-        const initialUsdcBalance = await edwin.getBalanceOfToken('solana', 'usdc');
+        const initialSolBalance = await edwin.wallets.solana.getBalance();
+        const initialUsdcBalance = await edwin.wallets.solana.getBalanceOfToken('usdc');
         console.log('Initial balances:');
         console.log('SOL:', initialSolBalance);
         console.log('USDC:', initialUsdcBalance);

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { Edwin } from '../src/edwin-client';
+import { Edwin } from '../src/';
 import dotenv from 'dotenv';
 
 // Load environment variables
