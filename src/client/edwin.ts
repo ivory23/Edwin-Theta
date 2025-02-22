@@ -45,15 +45,15 @@ export class Edwin {
 
         // Initialize plugins
         if (this.wallets.evm) {
-            this.plugins.aave = aave(this.wallets.evm as EdwinEVMWallet);
-            this.plugins.lido = lido(this.wallets.evm as EdwinEVMWallet);
-            this.plugins.uniswap = uniswap(this.wallets.evm as EdwinEVMWallet);
+            this.plugins.aave = aave(this.wallets.evm);
+            this.plugins.lido = lido(this.wallets.evm);
+            this.plugins.uniswap = uniswap(this.wallets.evm);
         }
 
         if (this.wallets.solana) {
-            this.plugins.lulo = lulo(this.wallets.solana as EdwinSolanaWallet);
-            this.plugins.meteora = meteora(this.wallets.solana as EdwinSolanaWallet);
-            this.plugins.jupiter = jupiter(this.wallets.solana as EdwinSolanaWallet);
+            this.plugins.lulo = lulo(this.wallets.solana);
+            this.plugins.meteora = meteora(this.wallets.solana);
+            this.plugins.jupiter = jupiter(this.wallets.solana);
         }
 
         if (process.env.COOKIE_API_KEY) {
