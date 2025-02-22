@@ -1,5 +1,5 @@
 import { EdwinSolanaWallet } from '../../core/wallets/solana_wallet/solana_wallet';
-import DLMM, { StrategyType, BinLiquidity, PositionData, LbPosition } from '@meteora-ag/dlmm';
+import DLMM, { StrategyType, BinLiquidity, PositionData, LbPosition, PositionInfo } from '@meteora-ag/dlmm';
 import { Keypair, PublicKey } from '@solana/web3.js';
 import { BN } from '@coral-xyz/anchor';
 import edwinLogger from '../../utils/logger';
@@ -118,7 +118,7 @@ export class MeteoraProtocol {
         return userPositions;
     }
 
-    async getPositions(): Promise<any> {
+    async getPositions(): Promise<Map<string, PositionInfo>> {
         try {
             const connection = this.wallet.getConnection();
 

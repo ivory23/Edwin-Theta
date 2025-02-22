@@ -11,9 +11,7 @@ export class LuloPlugin extends EdwinPlugin {
     }
 
     getTools(): Record<string, EdwinTool> {
-        const luloProtocol = this.toolProviders.find(
-            provider => provider instanceof LuloProtocol
-        ) as LuloProtocol;
+        const luloProtocol = this.toolProviders.find(provider => provider instanceof LuloProtocol) as LuloProtocol;
 
         return {
             luloSupply: {

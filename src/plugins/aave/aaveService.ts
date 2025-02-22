@@ -7,6 +7,14 @@ import edwinLogger from '../../utils/logger';
 import { SupplyParameters, WithdrawParameters } from './parameters';
 import { EdwinService } from '../../core/classes/edwinToolProvider';
 
+interface AaveError extends Error {
+    code?: string;
+    error?: {
+        body?: string;
+    };
+    reason?: string;
+}
+
 export class AaveService extends EdwinService {
     public supportedChains: SupportedChain[] = ['base'];
     private wallet: EdwinEVMWallet;
@@ -36,10 +44,11 @@ export class AaveService extends EdwinService {
             const extendedTxData = await tx.tx();
             const { from, ...txData } = extendedTxData;
             return await wallet.sendTransaction(txData);
-        } catch (error: any) {
+        } catch (error) {
             // Check if error contains gas estimation error details
-            if (error.code === 'UNPREDICTABLE_GAS_LIMIT') {
-                const reason = error.error?.body ? JSON.parse(error.error.body).error.message : error.reason;
+            const aaveError = error as AaveError;
+            if (aaveError.code === 'UNPREDICTABLE_GAS_LIMIT') {
+                const reason = aaveError.error?.body ? JSON.parse(aaveError.error.body).error.message : aaveError.reason;
                 throw new Error(`Transaction failed: ${reason}`);
             }
             throw error;

@@ -4,28 +4,34 @@ import {
     Transaction,
     TransactionMessage,
     VersionedTransaction,
+    ParsedInstruction as SolanaParsedInstruction,
 } from '@solana/web3.js';
 import { BN } from '@coral-xyz/anchor';
 import DLMM from '@meteora-ag/dlmm';
 import edwinLogger from '../../utils/logger';
 import { EdwinSolanaWallet } from '../../core/wallets/solana_wallet/solana_wallet';
 
-interface ParsedInstruction {
+interface TokenAmount {
+    amount: string;
+    decimals: number;
+    uiAmount: number;
+    uiAmountString: string;
+}
+
+interface TransferInfo {
+    amount: string;
+    authority: string;
+    destination: string;
+    mint: string;
+    source: string;
+    tokenAmount: TokenAmount;
+}
+
+interface ParsedInstruction extends Omit<SolanaParsedInstruction, 'program' | 'parsed'> {
+    program: string | undefined;
     parsed?: {
         type: string;
-        info: {
-            amount: string;
-            authority: string;
-            destination: string;
-            mint: string;
-            source: string;
-            tokenAmount: {
-                amount: string;
-                decimals: number;
-                uiAmount: number;
-                uiAmountString: string;
-            };
-        };
+        info: TransferInfo;
     };
 }
 
@@ -34,11 +40,9 @@ interface InnerInstruction {
     instructions: ParsedInstruction[];
 }
 
-interface TokenAmount {
-    amount: string;
-    decimals: number;
-    uiAmount: number;
-    uiAmountString: string;
+interface BalanceChanges {
+    liquidityRemoved: [number, number];
+    feesClaimed: [number, number];
 }
 
 export async function calculateAmounts(
@@ -105,27 +109,26 @@ export async function extractBalanceChanges(
     signature: string,
     tokenXAddress: string,
     tokenYAddress: string
-): Promise<{ liquidityRemoved: [number, number]; feesClaimed: [number, number] }> {
+): Promise<BalanceChanges> {
     const METEORA_DLMM_PROGRAM_ID = 'LBUZKhRxPF3XUpBCjp4YzTKgLccjZhTSDM9YuVaPwxo';
 
-    // Fetch the parsed transaction details.
     const txInfo = await getParsedTransactionWithRetries(connection, signature);
 
     if (!txInfo || !txInfo.meta) {
         throw new Error('Transaction details not found or not parsed');
     }
 
-    const outerInstructions = txInfo.transaction.message.instructions;
+    const outerInstructions = txInfo.transaction.message.instructions as ParsedInstruction[];
     const innerInstructions = txInfo.meta.innerInstructions || [];
 
-    const innerMap: Record<number, any[]> = {};
+    const innerMap: Record<number, ParsedInstruction[]> = {};
     for (const inner of innerInstructions) {
-        innerMap[inner.index] = inner.instructions;
+        innerMap[inner.index] = inner.instructions as ParsedInstruction[];
     }
 
     const meteoraInstructionIndices: number[] = [];
-    outerInstructions.forEach((ix: any, index: number) => {
-        if (ix.programId == METEORA_DLMM_PROGRAM_ID) {
+    outerInstructions.forEach((ix, index) => {
+        if (ix.programId?.toString() === METEORA_DLMM_PROGRAM_ID) {
             meteoraInstructionIndices.push(index);
         }
     });
@@ -137,10 +140,10 @@ export async function extractBalanceChanges(
     const removeLiquidityIndex = meteoraInstructionIndices[0];
     const claimFeeIndex = meteoraInstructionIndices[1];
 
-    const decodeTokenTransfers = (instructions: any[]): any[] => {
-        const transfers = [];
+    const decodeTokenTransfers = (instructions: ParsedInstruction[]): TransferInfo[] => {
+        const transfers: TransferInfo[] = [];
         for (const ix of instructions) {
-            if (ix.program === 'spl-token' && ix.parsed && ix.parsed.type === 'transferChecked') {
+            if (ix.program === 'spl-token' && ix.parsed?.type === 'transferChecked') {
                 transfers.push(ix.parsed.info);
             }
         }
@@ -153,12 +156,12 @@ export async function extractBalanceChanges(
     const claimFeeTransfers = innerMap[claimFeeIndex] ? decodeTokenTransfers(innerMap[claimFeeIndex]) : [];
 
     const liquidityRemovedA =
-        removeLiquidityTransfers.find(transfer => transfer.mint == tokenXAddress)?.tokenAmount.uiAmount || 0;
+        removeLiquidityTransfers.find(transfer => transfer.mint === tokenXAddress)?.tokenAmount.uiAmount || 0;
     const liquidityRemovedB =
-        removeLiquidityTransfers.find(transfer => transfer.mint == tokenYAddress)?.tokenAmount.uiAmount || 0;
+        removeLiquidityTransfers.find(transfer => transfer.mint === tokenYAddress)?.tokenAmount.uiAmount || 0;
 
-    const feesClaimedA = claimFeeTransfers.find(transfer => transfer.mint == tokenXAddress)?.tokenAmount.uiAmount || 0;
-    const feesClaimedB = claimFeeTransfers.find(transfer => transfer.mint == tokenYAddress)?.tokenAmount.uiAmount || 0;
+    const feesClaimedA = claimFeeTransfers.find(transfer => transfer.mint === tokenXAddress)?.tokenAmount.uiAmount || 0;
+    const feesClaimedB = claimFeeTransfers.find(transfer => transfer.mint === tokenYAddress)?.tokenAmount.uiAmount || 0;
 
     return {
         liquidityRemoved: [liquidityRemovedA, liquidityRemovedB],
@@ -171,10 +174,8 @@ export async function extractAddLiquidityTokenAmounts(innerInstructions: InnerIn
     for (const innerInstruction of innerInstructions) {
         if (innerInstruction.instructions) {
             for (const instruction of innerInstruction.instructions) {
-                if (instruction.parsed && instruction.parsed.type === 'transferChecked') {
-                    edwinLogger.debug(
-                        `Transfer info amounts: ${JSON.stringify(instruction.parsed.info.tokenAmount, null)}`
-                    );
+                if (instruction.parsed?.type === 'transferChecked') {
+                    edwinLogger.debug(`Transfer info amounts: ${JSON.stringify(instruction.parsed.info.tokenAmount)}`);
                     tokenAmounts.push(instruction.parsed.info.tokenAmount);
                 }
             }
@@ -183,12 +184,19 @@ export async function extractAddLiquidityTokenAmounts(innerInstructions: InnerIn
     return tokenAmounts;
 }
 
+interface SimulationInnerInstructions {
+    innerInstructions?: InnerInstruction[];
+}
+
+interface SimulationResult {
+    value: SimulationInnerInstructions;
+}
+
 export async function simulateAddLiquidityTransaction(
     connection: Connection,
     tx: Transaction,
     wallet: EdwinSolanaWallet
 ): Promise<TokenAmount[]> {
-    // Convert to versioned transaction
     const latestBlockhash = await connection.getLatestBlockhash();
     const messageV0 = new TransactionMessage({
         payerKey: wallet.getPublicKey(),
@@ -197,22 +205,22 @@ export async function simulateAddLiquidityTransaction(
     }).compileToV0Message();
     const versionedTx = new VersionedTransaction(messageV0);
 
-    // Assume `connection` is a Connection and `transaction` is your built Transaction.
-    const simulationResult = await connection.simulateTransaction(versionedTx, { innerInstructions: true });
+    const simulationResult = (await connection.simulateTransaction(versionedTx, {
+        innerInstructions: true,
+    })) as SimulationResult;
 
     const innerInstructions = simulationResult.value.innerInstructions;
     if (!innerInstructions) {
         throw new Error('Inner instructions not found in simulation result');
     }
 
-    return extractAddLiquidityTokenAmounts(innerInstructions as InnerInstruction[]);
+    return extractAddLiquidityTokenAmounts(innerInstructions);
 }
 
 export async function verifyAddLiquidityTokenAmounts(
     connection: Connection,
     signature: string
 ): Promise<TokenAmount[]> {
-    // Fetch the parsed transaction details.
     const txInfo = await getParsedTransactionWithRetries(connection, signature);
 
     if (!txInfo || !txInfo.meta) {
@@ -220,7 +228,5 @@ export async function verifyAddLiquidityTokenAmounts(
     }
 
     const innerInstructions = txInfo.meta.innerInstructions || [];
-    const tokenAmounts = await extractAddLiquidityTokenAmounts(innerInstructions as InnerInstruction[]);
-
-    return tokenAmounts;
+    return extractAddLiquidityTokenAmounts(innerInstructions as InnerInstruction[]);
 }

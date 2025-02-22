@@ -1,8 +1,8 @@
-import { ZodTypeDef, ZodSchema } from 'zod';
+import { ZodSchema } from 'zod';
 
-export interface EdwinTool {
+export interface EdwinTool<TSchema extends ZodSchema = ZodSchema> {
     name: string;
     description: string;
-    schema: ZodSchema<any, ZodTypeDef, any>;
-    execute: (params: any) => Promise<any>;
+    schema: TSchema;
+    execute: (params: TSchema['_output']) => Promise<unknown>;
 }

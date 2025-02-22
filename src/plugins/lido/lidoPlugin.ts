@@ -11,9 +11,7 @@ export class LidoPlugin extends EdwinPlugin {
     }
 
     getTools(): Record<string, EdwinTool> {
-        const lidoProtocol = this.toolProviders.find(
-            provider => provider instanceof LidoProtocol
-        ) as LidoProtocol;
+        const lidoProtocol = this.toolProviders.find(provider => provider instanceof LidoProtocol) as LidoProtocol;
 
         return {
             lidoStake: {

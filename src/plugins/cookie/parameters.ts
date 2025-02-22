@@ -10,4 +10,4 @@ export interface SearchParameters {
     query: string;
     from: string;
     to: string;
-} 
+}

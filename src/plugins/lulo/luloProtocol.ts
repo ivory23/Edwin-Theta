@@ -5,6 +5,18 @@ import { SupplyParameters, WithdrawParameters } from './parameters';
 import { EdwinSolanaWallet } from '../../core/wallets/solana_wallet/solana_wallet';
 import edwinLogger from '../../utils/logger';
 
+interface LuloDepositResponse {
+    data: {
+        transactionMeta: Array<{
+            transaction: string;
+        }>;
+    };
+}
+
+interface LuloWithdrawResponse {
+    signature: string;
+}
+
 export class LuloProtocol {
     public supportedChains: SupportedChain[] = ['solana'];
     private wallet: EdwinSolanaWallet;
@@ -41,9 +53,9 @@ export class LuloProtocol {
                 }),
             });
             edwinLogger.info(response);
-            const {
-                data: { transactionMeta },
-            } = await response.json();
+            const responseData = (await response.json()) as LuloDepositResponse;
+
+            const transactionMeta = responseData.data.transactionMeta;
 
             // Deserialize the transaction
             const luloTxn = VersionedTransaction.deserialize(Buffer.from(transactionMeta[0].transaction, 'base64'));
@@ -77,8 +89,9 @@ export class LuloProtocol {
                 ' to Lulo.fi, transaction signature: ' +
                 signature
             );
-        } catch (error: any) {
-            throw new Error(`Lulo supply failed: ${error.message}`);
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+            throw new Error(`Lulo supply failed: ${errorMessage}`);
         }
     }
 
@@ -97,7 +110,7 @@ export class LuloProtocol {
                 }
             );
 
-            const data = await response.json();
+            const data = (await response.json()) as LuloWithdrawResponse;
 
             return (
                 'Successfully withdrew ' +
@@ -107,8 +120,9 @@ export class LuloProtocol {
                 ' from Lulo.fi, transaction signature: ' +
                 data.signature
             );
-        } catch (error: any) {
-            throw new Error(`Lulo withdraw failed: ${error.message}`);
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+            throw new Error(`Lulo withdraw failed: ${errorMessage}`);
         }
     }
 }

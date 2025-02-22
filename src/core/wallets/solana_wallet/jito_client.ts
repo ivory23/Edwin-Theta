@@ -5,7 +5,24 @@ interface JsonRpcRequest {
     jsonrpc: string;
     id: number;
     method: string;
-    params: any[];
+    params: unknown[];
+}
+
+interface TipAccount {
+    address: string;
+    // Add other tip account properties as needed
+}
+
+interface BundleStatus {
+    status: 'Failed' | 'Landed' | 'Pending';
+    landed_slot?: number;
+    error?: string;
+}
+
+interface BundleResponse {
+    result: {
+        value: BundleStatus[];
+    };
 }
 
 export class JitoJsonRpcClient {
@@ -23,20 +40,20 @@ export class JitoJsonRpcClient {
         });
     }
 
-    async sendRequest(endpoint: string, method: string, params?: any[]): Promise<any> {
+    async sendRequest<T>(endpoint: string, method: string, params: unknown[] = []): Promise<T> {
         const url = `${this.baseUrl}${endpoint}`;
 
         const data: JsonRpcRequest = {
             jsonrpc: '2.0',
             id: 1,
             method,
-            params: params || [],
+            params,
         };
 
         try {
-            const response = await this.client.post(url, data);
+            const response = await this.client.post<T>(url, data);
             return response.data;
-        } catch (error: unknown) {
+        } catch (error) {
             if (axios.isAxiosError(error)) {
                 edwinLogger.error(`HTTP error: ${error.message}`);
                 throw error;
@@ -47,12 +64,12 @@ export class JitoJsonRpcClient {
         }
     }
 
-    async getTipAccounts(): Promise<any> {
+    async getTipAccounts(): Promise<{ result: TipAccount[] }> {
         const endpoint = this.uuid ? `/bundles?uuid=${this.uuid}` : '/bundles';
         return this.sendRequest(endpoint, 'getTipAccounts');
     }
 
-    async getRandomTipAccount(): Promise<any> {
+    async getRandomTipAccount(): Promise<TipAccount> {
         const tipAccountsResponse = await this.getTipAccounts();
         if (
             tipAccountsResponse.result &&
@@ -61,17 +78,16 @@ export class JitoJsonRpcClient {
         ) {
             const randomIndex = Math.floor(Math.random() * tipAccountsResponse.result.length);
             return tipAccountsResponse.result[randomIndex];
-        } else {
-            throw new Error('No tip accounts available');
         }
+        throw new Error('No tip accounts available');
     }
 
-    async sendBundle(params: any[]): Promise<any> {
+    async sendBundle(params: unknown[]): Promise<unknown> {
         const endpoint = this.uuid ? `/bundles?uuid=${this.uuid}` : '/bundles';
         return this.sendRequest(endpoint, 'sendBundle', params);
     }
 
-    async sendTxn(params: any[], bundleOnly: boolean = false): Promise<any> {
+    async sendTxn(params: unknown[], bundleOnly = false): Promise<unknown> {
         let endpoint = '/transactions';
         const queryParams: string[] = [];
 
@@ -90,26 +106,25 @@ export class JitoJsonRpcClient {
         return this.sendRequest(endpoint, 'sendTransaction', params);
     }
 
-    async getInFlightBundleStatuses(params: any[]): Promise<any> {
+    async getInFlightBundleStatuses(bundleIds: (string | number)[]): Promise<BundleResponse> {
         const endpoint = this.uuid ? `/bundles?uuid=${this.uuid}` : '/bundles';
-        return this.sendRequest(endpoint, 'getInflightBundleStatuses', params);
+        return this.sendRequest(endpoint, 'getInflightBundleStatuses', [bundleIds]);
     }
 
-    async getBundleStatuses(params: any[]): Promise<any> {
+    async getBundleStatuses(bundleIds: (string | number)[]): Promise<BundleResponse> {
         const endpoint = this.uuid ? `/bundles?uuid=${this.uuid}` : '/bundles';
-        return this.sendRequest(endpoint, 'getBundleStatuses', params);
+        return this.sendRequest(endpoint, 'getBundleStatuses', [bundleIds]);
     }
 
-    async confirmInflightBundle(bundleId: string | number, timeoutMs: number = 60000): Promise<any> {
+    async confirmInflightBundle(bundleId: string | number, timeoutMs = 60000): Promise<BundleStatus> {
         const start = Date.now();
 
         while (Date.now() - start < timeoutMs) {
             try {
-                const response = await this.getInFlightBundleStatuses([[bundleId]]);
+                const response = await this.getInFlightBundleStatuses([bundleId]);
 
                 if (
-                    response.result &&
-                    response.result.value &&
+                    response.result?.value &&
                     Array.isArray(response.result.value) &&
                     response.result.value.length > 0
                 ) {
@@ -120,18 +135,15 @@ export class JitoJsonRpcClient {
                     if (bundleStatus.status === 'Failed') {
                         return bundleStatus;
                     } else if (bundleStatus.status === 'Landed') {
-                        // If the bundle has landed, get more detailed status
-                        const detailedStatus = await this.getBundleStatuses([[bundleId]]);
+                        const detailedStatus = await this.getBundleStatuses([bundleId]);
                         if (
-                            detailedStatus.result &&
-                            detailedStatus.result.value &&
+                            detailedStatus.result?.value &&
                             Array.isArray(detailedStatus.result.value) &&
                             detailedStatus.result.value.length > 0
                         ) {
                             return detailedStatus.result.value[0];
-                        } else {
-                            return bundleStatus;
                         }
+                        return bundleStatus;
                     }
                 } else {
                     edwinLogger.info('No status returned for the bundle. It may be invalid or very old.');
@@ -146,6 +158,6 @@ export class JitoJsonRpcClient {
 
         // If we've reached this point, the bundle hasn't reached a final state within the timeout
         edwinLogger.info(`Bundle ${bundleId} has not reached a final state within ${timeoutMs}ms`);
-        return { status: 'Timeout' };
+        return { status: 'Pending' };
     }
 }

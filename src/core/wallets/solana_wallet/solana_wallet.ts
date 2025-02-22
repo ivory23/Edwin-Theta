@@ -17,6 +17,31 @@ import { withRetry } from '../../../utils';
 
 const NATIVE_SOL_MINT = 'So11111111111111111111111111111111111111112';
 
+interface TokenInfo {
+    symbol: string;
+    address: string;
+}
+
+interface TokenBalance {
+    owner?: string;
+    mint?: string;
+    uiTokenAmount: {
+        uiAmount: number | null;
+    };
+}
+
+interface SignatureStatus {
+    err: unknown;
+    confirmationStatus?: 'confirmed' | 'finalized' | 'processed';
+}
+
+interface JitoResponse {
+    error?: {
+        message: string;
+    };
+    result: string;
+}
+
 export class EdwinSolanaWallet extends EdwinWallet {
     private wallet: Keypair;
     private wallet_address: PublicKey;
@@ -52,9 +77,9 @@ export class EdwinSolanaWallet extends EdwinWallet {
 
     async getTokenAddress(symbol: string): Promise<string | null> {
         const tokens = await new TokenListProvider().resolve();
-        const tokenList = tokens.filterByChainId(101).getList(); // 101 = Solana mainnet
+        const tokenList = tokens.filterByChainId(101).getList();
 
-        const token = tokenList.find((t: any) => t.symbol.toLowerCase() === symbol.toLowerCase());
+        const token = tokenList.find((t: TokenInfo) => t.symbol.toLowerCase() === symbol.toLowerCase());
         return token ? token.address : null;
     }
 
@@ -97,7 +122,7 @@ export class EdwinSolanaWallet extends EdwinWallet {
         connection: Connection,
         signature: string,
         timeout: number = 120000 // Timeout in milliseconds
-    ) {
+    ): Promise<SignatureStatus> {
         const startTime = Date.now();
 
         while (Date.now() - startTime < timeout) {
@@ -183,7 +208,7 @@ export class EdwinSolanaWallet extends EdwinWallet {
             }),
         });
 
-        const data = await response.json();
+        const data = (await response.json()) as JitoResponse;
         if (data.error) {
             throw new Error(data.error.message);
         }
@@ -227,13 +252,16 @@ export class EdwinSolanaWallet extends EdwinWallet {
             const preTokenBalances = txInfo.meta.preTokenBalances || [];
             const postTokenBalances = txInfo.meta.postTokenBalances || [];
             // Helper function: find the token balance entry for the wallet & token mint.
-            const findBalance = (balances: any[]) =>
-                balances.find(balance => balance.owner === this.getAddress() && balance.mint === mint);
+            const findBalance = (balances: TokenBalance[]) =>
+                balances.find(
+                    balance =>
+                        balance.owner && balance.mint && balance.owner === this.getAddress() && balance.mint === mint
+                );
             const preBalanceEntry = findBalance(preTokenBalances);
             const postBalanceEntry = findBalance(postTokenBalances);
-            const preBalance = preBalanceEntry ? preBalanceEntry.uiTokenAmount.uiAmount : 0;
-            const postBalance = postBalanceEntry ? postBalanceEntry.uiTokenAmount.uiAmount : 0;
-            actualOutputAmount = postBalance - preBalance;
+            const preBalance = preBalanceEntry?.uiTokenAmount.uiAmount ?? 0;
+            const postBalance = postBalanceEntry?.uiTokenAmount.uiAmount ?? 0;
+            actualOutputAmount = (postBalance || 0) - (preBalance || 0);
         }
         return actualOutputAmount;
     }

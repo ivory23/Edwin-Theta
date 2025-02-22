@@ -27,6 +27,10 @@ export interface JupiterQuoteParameters {
     slippageBps?: number;
 }
 
+interface PlatformFee {
+    amount: string;
+    feeBps: number;
+}
 
 interface JupiterQuoteResponse {
     inputMint: string;
@@ -36,7 +40,7 @@ interface JupiterQuoteResponse {
     otherAmountThreshold: string;
     swapMode: string;
     slippageBps: number;
-    platformFee: null | any;
+    platformFee: PlatformFee | null;
     priceImpactPct: string;
     routePlan: RoutePlan[];
     contextSlot: number;
