@@ -5,7 +5,7 @@ import { ChatOpenAI } from '@langchain/openai';
 import * as dotenv from 'dotenv';
 import * as readline from 'readline';
 import { Edwin, EdwinConfig } from '../../src/client';
-import { getEdwinTools } from '../../src/adapters/langchain';
+import { getLangchainToolsFromEdwin } from '../../src/adapters/langchain';
 
 dotenv.config();
 
@@ -56,7 +56,7 @@ async function initializeAgent() {
         // Initialize Edwin SDK
         const edwin = new Edwin(edwinConfig);
 
-        const tools = await getEdwinTools({ edwin });
+        const tools = await getLangchainToolsFromEdwin({ edwin });
         const memory = new MemorySaver();
         const config = { configurable: { thread_id: 'Edwin SDK Usage' } };
 

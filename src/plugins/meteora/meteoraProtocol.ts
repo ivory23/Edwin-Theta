@@ -118,9 +118,8 @@ export class MeteoraProtocol {
         return userPositions;
     }
 
-    async getPositions(params: PoolParameters): Promise<any> {
+    async getPositions(): Promise<any> {
         try {
-            edwinLogger.info('GetPositions params: ', params);
             const connection = this.wallet.getConnection();
 
             return await withRetry(

@@ -2,7 +2,7 @@ import { SupportedChain } from '../../core/types';
 import { PublicKey, VersionedTransaction } from '@solana/web3.js';
 import { EdwinSolanaWallet } from '../../core/wallets/solana_wallet/solana_wallet';
 import { withRetry } from '../../utils';
-import { SwapParameters, JupiterQuoteParameters } from './parameters';
+import { SwapParameters } from './parameters';
 
 interface SwapInfo {
     ammKey: string;
@@ -19,6 +19,14 @@ interface RoutePlan {
     swapInfo: SwapInfo;
     percent: number;
 }
+
+export interface JupiterQuoteParameters {
+    inputMint: string;
+    outputMint: string;
+    amount: string | number;
+    slippageBps?: number;
+}
+
 
 interface JupiterQuoteResponse {
     inputMint: string;

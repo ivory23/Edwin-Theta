@@ -1,3 +1,3 @@
-export { AaveProtocol } from './aaveProtocol';
+export { AaveService } from './aaveService';
 
 export { aave } from './aavePlugin';

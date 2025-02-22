@@ -1,46 +1,46 @@
 import { EdwinPlugin } from '../../core/classes/edwinPlugin';
-import { AaveProtocol } from './aaveProtocol';
-import { EdwinEVMWallet } from '../../core/wallets';
-import { Chain, EdwinTool } from '../../core/types';
+import { EdwinTool, Chain } from '../../core/types';
 import { z } from 'zod';
-import { SupplyParameters, WithdrawParameters } from './paramters';
+import { AaveService } from './aaveService';
+import { EdwinEVMWallet } from '../../core/wallets';
+import { SupplyParameters, WithdrawParameters } from './parameters';
 
-class AavePlugin extends EdwinPlugin {
+export class AavePlugin extends EdwinPlugin {
     constructor(wallet: EdwinEVMWallet) {
-        super('aave', [new AaveProtocol(wallet)]);
+        super('aave', [new AaveService(wallet)]);
     }
 
     getTools(): Record<string, EdwinTool> {
-        const aaveProtocol = this.toolProviders.find(provider => provider instanceof AaveProtocol) as AaveProtocol;
+        const aaveService = this.toolProviders.find(provider => provider instanceof AaveService) as AaveService;
 
         return {
-            aave_supply: {
+            aaveSupply: {
                 name: 'aave_supply',
-                description: 'Supply assets to AAVE protocol',
+                description: 'Supply assets to Aave protocol',
                 schema: z.object({
                     chain: z.string().min(1),
                     asset: z.string().min(1),
                     amount: z.number().positive(),
                 }),
                 execute: async (params: SupplyParameters) => {
-                    return await aaveProtocol.supply(params);
+                    return await aaveService.supply(params);
                 },
             },
-            aave_withdraw: {
+            aaveWithdraw: {
                 name: 'aave_withdraw',
-                description: 'Withdraw assets from AAVE protocol',
+                description: 'Withdraw assets from Aave protocol',
                 schema: z.object({
                     asset: z.string().min(1),
                     amount: z.number().positive(),
                 }),
                 execute: async (params: WithdrawParameters) => {
-                    return await aaveProtocol.withdraw(params);
+                    return await aaveService.withdraw(params);
                 },
             },
         };
     }
 
-    supportsChain = (chain: Chain) => chain.type === 'solana';
+    supportsChain = (chain: Chain) => chain.type === 'evm';
 }
 
 export const aave = (wallet: EdwinEVMWallet) => new AavePlugin(wallet);

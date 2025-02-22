@@ -2,28 +2,25 @@ import { config } from 'dotenv';
 config(); // Load test environment variables from .env file
 
 import { describe, expect, it } from 'vitest';
-import { Edwin, EdwinConfig } from '../src';
 import { safeJsonStringify } from '../src/utils';
 import edwinLogger from '../src/utils/logger';
 import { calculateAmounts, extractBalanceChanges } from '../src/plugins/meteora/utils';
 import DLMM from '@meteora-ag/dlmm';
 import { BN } from '@coral-xyz/anchor';
 import { EdwinSolanaWallet } from '../src/core/wallets/solana_wallet/solana_wallet';
+import { MeteoraProtocol } from '../src/plugins/meteora/meteoraProtocol';
 
 // Meteora test
 describe('Meteora test', () => {
-    const edwinConfig: EdwinConfig = {
-        solanaPrivateKey: process.env.SOLANA_PRIVATE_KEY,
-        plugins: ['meteora'],
-    };
-    const edwin = new Edwin(edwinConfig);
-    const meteoraTools = edwin.plugins.meteora.getTools();
+    if (!process.env.SOLANA_PRIVATE_KEY) {
+        throw new Error('SOLANA_PRIVATE_KEY is not set');
+    }
+    const meteora = new MeteoraProtocol(new EdwinSolanaWallet(process.env.SOLANA_PRIVATE_KEY));
 
     it('test meteora getPools', async () => {
-        const results = await meteoraTools.getPools.execute({
+        const results = await meteora.getPools({
             asset: 'sol',
             assetB: 'usdc',
-            protocol: 'meteora',
         });
         expect(results).toBeDefined();
         expect(results).toBeInstanceOf(Array);
@@ -31,23 +28,21 @@ describe('Meteora test', () => {
     }, 30000); // 30 second timeout
 
     it('test meteora getPositions - note - need to use a paid RPC for this test', async () => {
-        const positions = await edwin.plugins.meteora.getPositions.execute();
+        const positions = await meteora.getPositions();
         edwinLogger.info('🚀 ~ it ~ getPositions result:', safeJsonStringify(positions));
     }, 120000); // 120 second timeout
 
     it('test meteora create position and add liquidity, then check for new position', async () => {
-        const results = await edwin.plugins.meteora.getPools.execute({
+        const results = await meteora.getPools({
             asset: 'sol',
             assetB: 'usdc',
         });
         const topPoolAddress = results[0].address;
 
-        const result = await edwin.plugins.addLiquidity.execute({
+        const result = await meteora.addLiquidity({
             poolAddress: topPoolAddress,
             amount: 'auto',
             amountB: '2',
-            protocol: 'meteora',
-            chain: 'solana',
         });
         // Verify liquidity was added correctly
         expect(result.liquidityAdded).toBeDefined();
@@ -58,9 +53,7 @@ describe('Meteora test', () => {
 
         const positionAddress = result.positionAddress;
         // Get positions after adding liquidity
-        const positions = await edwin.plugins.getPositionsFromPool.execute({
-            protocol: 'meteora',
-            chain: 'solana',
+        const positions = await meteora.getPositionsFromPool({
             poolAddress: topPoolAddress,
         });
         // Check that positions is ok - should be 1 position
@@ -71,10 +64,7 @@ describe('Meteora test', () => {
 
     it('test meteora remove liquidity', async () => {
         // Get initial positions
-        const positions = await edwin.plugins.getPositions.execute({
-            protocol: 'meteora',
-            chain: 'solana',
-        });
+        const positions = await meteora.getPositions();
         edwinLogger.info('🚀 ~ it ~ initial positions:', positions);
 
         if (!positions || positions.size === 0) {
@@ -83,18 +73,14 @@ describe('Meteora test', () => {
 
         // Remove liquidity from first position found
         const poolAddress = positions.keys().toArray()[0];
-        const result = await edwin.actions.removeLiquidity.execute({
-            protocol: 'meteora',
-            chain: 'solana',
+        const result = await meteora.removeLiquidity({
             poolAddress: poolAddress,
             shouldClosePosition: true,
         });
         edwinLogger.info('🚀 ~ it ~ removeLiquidity result:', result);
 
         // Check positions after removal
-        const positionsAfter = await edwin.actions.getPositionsFromPool.execute({
-            protocol: 'meteora',
-            chain: 'solana',
+        const positionsAfter = await meteora.getPositionsFromPool({
             poolAddress: poolAddress,
         });
         edwinLogger.info('🚀 ~ it ~ positions after removal:', positionsAfter);
@@ -105,11 +91,11 @@ describe('Meteora test', () => {
 });
 
 describe('Meteora utils', () => {
-    const edwinConfig: EdwinConfig = {
-        solanaPrivateKey: process.env.SOLANA_PRIVATE_KEY,
-        plugins: ['meteora'],
-    };
-    const edwin = new Edwin(edwinConfig);
+    if (!process.env.SOLANA_PRIVATE_KEY) {
+        throw new Error('SOLANA_PRIVATE_KEY is not set');
+    }
+    const wallet = new EdwinSolanaWallet(process.env.SOLANA_PRIVATE_KEY);
+    const meteora = new MeteoraProtocol(wallet);
 
     describe('calculateAmounts', () => {
         // Mock DLMM instance
@@ -180,13 +166,13 @@ describe('Meteora utils', () => {
 
     describe('extractBalanceChanges', () => {
         it('should correctly extract balance changes from a transaction', async () => {
-            const tokenXMint = await edwin.wallets.solana.getTokenAddress('sol');
-            const tokenYMint = await edwin.wallets.solana.getTokenAddress('usdc');
+            const tokenXMint = await wallet.getTokenAddress('sol');
+            const tokenYMint = await wallet.getTokenAddress('usdc');
             if (!tokenXMint || !tokenYMint) {
                 throw new Error('Token address not found');
             }
 
-            const connection = (edwin.wallets['solana'] as EdwinSolanaWallet).getConnection();
+            const connection = wallet.getConnection();
             const result = await extractBalanceChanges(
                 connection,
                 '31brBmpbZMqduwi3u1Z6Si2Xt4izdkX2TE45jdeeq1oVreiahKyfaHSArMKdyqKWeYFT6GwGWRBxwfnwfbGbPypR',
@@ -220,7 +206,7 @@ describe('Meteora utils', () => {
         }, 20000);
 
         it('should handle transaction not found', async () => {
-            const connection = (edwin.wallets['solana'] as EdwinSolanaWallet).getConnection();
+            const connection = wallet.getConnection();
             await expect(
                 extractBalanceChanges(connection, 'invalid_signature', 'token_x_address', 'token_y_address')
             ).rejects.toThrow(Error);

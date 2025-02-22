@@ -4,10 +4,10 @@ import { ethers, providers } from 'ethers';
 import { EdwinEVMWallet } from '../../core/wallets/evm_wallet/evm_wallet';
 import { type SupportedChain, type SupportedEVMChain } from '../../core/types';
 import edwinLogger from '../../utils/logger';
-import { SupplyParameters, WithdrawParameters } from './paramters';
+import { SupplyParameters, WithdrawParameters } from './parameters';
 import { EdwinService } from '../../core/classes/edwinToolProvider';
 
-export class AaveProtocol extends EdwinService {
+export class AaveService extends EdwinService {
     public supportedChains: SupportedChain[] = ['base'];
     private wallet: EdwinEVMWallet;
 

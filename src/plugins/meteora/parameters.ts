@@ -6,7 +6,7 @@ export interface AddLiquidityParameters {
 
 export interface RemoveLiquidityParameters {
     poolAddress: string;
-    positionAddress: string;
+    positionAddress?: string;
     shouldClosePosition?: boolean;
 }
 

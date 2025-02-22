@@ -1,5 +1,6 @@
 import { SupportedChain } from '../../core/types';
 import edwinLogger from '../../utils/logger';
+import { AgentParameters, SearchParameters } from './parameters';
 
 interface AgentResponse {
     ok: {
@@ -99,47 +100,47 @@ export class CookieSwarmClient {
         return response.json();
     }
 
-    async getAgentByTwitter(twitterUsername: string, interval: string): Promise<string> {
+    async getAgentByTwitter(params: AgentParameters): Promise<string> {
         // Verify interval is valid
-        if (!['_3Days', '_7Days'].includes(interval)) {
+        if (!['_3Days', '_7Days'].includes(params.interval)) {
             throw new Error('Invalid interval');
         }
         // Note the trailing slash after username
         const response = await this.fetch<AgentResponse>(
-            `/v2/agents/twitterUsername/${twitterUsername}/?interval=${interval}`
+            `/v2/agents/twitterUsername/${params.username}/?interval=${params.interval}`
         );
         return JSON.stringify(response);
     }
 
-    async getAgentByContract(contractAddress: string, interval: string): Promise<string> {
+    async getAgentByContract(params: AgentParameters): Promise<string> {
         // Verify interval is valid and cast to Interval
-        if (!['_3Days', '_7Days'].includes(interval)) {
+        if (!['_3Days', '_7Days'].includes(params.interval)) {
             throw new Error('Invalid interval');
         }
         const response = await this.fetch<AgentResponse>(
-            `/v2/agents/contractAddress/${contractAddress}?interval=${interval}`
+            `/v2/agents/contractAddress/${params.contractAddress}?interval=${params.interval}`
         );
         return JSON.stringify(response);
     }
 
-    async getAgentsPaged(interval: string, page: number, pageSize: number): Promise<string> {
+    async getAgentsPaged(params: AgentParameters): Promise<string> {
         // Verify interval is valid and cast to Interval
-        if (!['_3Days', '_7Days'].includes(interval)) {
+        if (!['_3Days', '_7Days'].includes(params.interval)) {
             throw new Error('Invalid interval');
         }
-        if (pageSize < 1 || pageSize > 25) {
+        if (params.pageSize && (params.pageSize < 1 || params.pageSize > 25)) {
             throw new Error('Page size must be between 1 and 25');
         }
         const response = await this.fetch<GetAgentsPagedResponse>(
-            `/v2/agents/agentsPaged?interval=${interval}&page=${page}&pageSize=${pageSize}`
+            `/v2/agents/agentsPaged?interval=${params.interval}&page=${params.page}&pageSize=${params.pageSize}`
         );
         return JSON.stringify(response);
     }
 
-    async searchTweets(searchQuery: string, from: string, to: string): Promise<string> {
-        const encodedQuery = encodeURIComponent(searchQuery);
+    async searchTweets(params: SearchParameters): Promise<string> {
+        const encodedQuery = encodeURIComponent(params.query);
         const response = await this.fetch<TweetSearchResponse>(
-            `/v1/hackathon/search/${encodedQuery}?from=${from}&to=${to}`
+            `/v1/hackathon/search/${encodedQuery}?from=${params.from}&to=${params.to}`
         );
         return JSON.stringify(response);
     }

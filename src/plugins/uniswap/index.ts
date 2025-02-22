@@ -1,1 +1,1 @@
-export { uniswap } from './uniswapPlugin';
+export { uniswap, UniswapPlugin } from './uniswapPlugin';

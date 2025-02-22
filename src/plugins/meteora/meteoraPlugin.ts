@@ -5,7 +5,7 @@ import { MeteoraProtocol } from './meteoraProtocol';
 import { EdwinSolanaWallet } from '../../core/wallets';
 import { AddLiquidityParameters, RemoveLiquidityParameters, PoolParameters, GetPoolsParameters } from './parameters';
 
-class MeteoraPlugin extends EdwinPlugin {
+export class MeteoraPlugin extends EdwinPlugin {
     constructor(wallet: EdwinSolanaWallet) {
         super('meteora', [new MeteoraProtocol(wallet)]);
     }
