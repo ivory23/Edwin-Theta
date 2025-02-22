@@ -11,7 +11,7 @@ import {
 } from './utils';
 import { withRetry } from '../../utils';
 import { MeteoraStatisticalBugError } from './errors';
-import { LiquidityParameters } from './parameters';
+import { AddLiquidityParameters, RemoveLiquidityParameters, PoolParameters, GetPoolsParameters } from './parameters';
 interface MeteoraPoolResult {
     pairs: MeteoraPool[];
 }
@@ -75,7 +75,7 @@ export class MeteoraProtocol {
         }
     }
 
-    async getPools(params: LiquidityParameters): Promise<MeteoraPoolOutput[]> {
+    async getPools(params: GetPoolsParameters): Promise<MeteoraPoolOutput[]> {
         const { asset, assetB } = params;
         const limit = 10;
         if (!asset || !assetB) {
@@ -104,7 +104,7 @@ export class MeteoraProtocol {
         }));
     }
 
-    async getPositionsFromPool(params: LiquidityParameters): Promise<Array<LbPosition>> {
+    async getPositionsFromPool(params: PoolParameters): Promise<Array<LbPosition>> {
         const { poolAddress } = params;
         if (!poolAddress) {
             throw new Error('Pool address is required for Meteora getPositionsFromPool');
@@ -118,7 +118,7 @@ export class MeteoraProtocol {
         return userPositions;
     }
 
-    async getPositions(params: LiquidityParameters): Promise<any> {
+    async getPositions(params: PoolParameters): Promise<any> {
         try {
             edwinLogger.info('GetPositions params: ', params);
             const connection = this.wallet.getConnection();
@@ -134,7 +134,7 @@ export class MeteoraProtocol {
         }
     }
 
-    async getActiveBin(params: LiquidityParameters): Promise<BinLiquidity> {
+    async getActiveBin(params: PoolParameters): Promise<BinLiquidity> {
         const { poolAddress } = params;
         if (!poolAddress) {
             throw new Error('Pool address is required for Meteora getActiveBin');
@@ -256,7 +256,7 @@ export class MeteoraProtocol {
     }
 
     async addLiquidity(
-        params: LiquidityParameters
+        params: AddLiquidityParameters
     ): Promise<{ positionAddress: string; liquidityAdded: [number, number] }> {
         const { amount, amountB, poolAddress } = params;
         edwinLogger.info(
@@ -290,7 +290,6 @@ export class MeteoraProtocol {
                             await withRetry(
                                 async () =>
                                     this.removeLiquidity({
-                                        chain: 'solana',
                                         poolAddress,
                                         shouldClosePosition: true,
                                         positionAddress: result!.positionAddress,
@@ -312,11 +311,8 @@ export class MeteoraProtocol {
         }
     }
 
-    async claimFees(params: any): Promise<string> {
-        const { chain, poolAddress } = params;
-        if (chain !== 'solana') {
-            throw new Error('Meteora protocol only supports Solana');
-        }
+    async claimFees(params: PoolParameters): Promise<string> {
+        const { poolAddress } = params;
 
         try {
             const connection = this.wallet.getConnection();
@@ -358,12 +354,11 @@ Fees claimed:
         }
     }
 
-    async removeLiquidity(params: any): Promise<{ liquidityRemoved: [number, number]; feesClaimed: [number, number] }> {
-        const { chain, poolAddress, positionAddress, shouldClosePosition } = params;
+    async removeLiquidity(
+        params: RemoveLiquidityParameters
+    ): Promise<{ liquidityRemoved: [number, number]; feesClaimed: [number, number] }> {
+        const { poolAddress, positionAddress, shouldClosePosition } = params;
         try {
-            if (chain !== 'solana') {
-                throw new Error('Meteora protocol only supports Solana');
-            }
             if (!poolAddress) {
                 throw new Error('Pool address is required for Meteora liquidity removal');
             }

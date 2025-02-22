@@ -13,13 +13,12 @@ describe('Edwin AAVE test', () => {
 
         const edwinConfig: EdwinConfig = {
             evmPrivateKey: evmPrivateKey as `0x${string}`,
-            plugins: ['aave']
+            plugins: ['aave'],
         };
 
         const edwin = new Edwin(edwinConfig);
 
         expect(edwin).toBeDefined();
-        const aaveTools = edwin.plugins.aave as AavePlugin;
 
         // Test supply action
         const result = await edwin.plugins.aave.supply({

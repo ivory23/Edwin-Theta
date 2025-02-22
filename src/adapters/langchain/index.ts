@@ -31,6 +31,6 @@ function createToolFromEdwinTool(edwinTool: EdwinTool) {
  * Converts Edwin actions to Langchain tools
  */
 export async function getEdwinTools({ edwin }: GetEdwinToolsParams) {
-    const tools = await edwin.getTools();
-    return tools.map(createToolFromEdwinTool);
+    const toolsRecord = await edwin.getTools();
+    return Object.values(toolsRecord).map((tool: EdwinTool) => createToolFromEdwinTool(tool));
 }

@@ -14,12 +14,13 @@ import { EdwinSolanaWallet } from '../src/core/wallets/solana_wallet/solana_wall
 describe('Meteora test', () => {
     const edwinConfig: EdwinConfig = {
         solanaPrivateKey: process.env.SOLANA_PRIVATE_KEY,
-        actions: ['getPositions', 'getPools', 'addLiquidity', 'removeLiquidity', 'getPositionsFromPool'],
+        plugins: ['meteora'],
     };
     const edwin = new Edwin(edwinConfig);
+    const meteoraTools = edwin.plugins.meteora.getTools();
 
     it('test meteora getPools', async () => {
-        const results = await edwin.actions.getPools.execute({
+        const results = await meteoraTools.getPools.execute({
             asset: 'sol',
             assetB: 'usdc',
             protocol: 'meteora',
@@ -30,22 +31,18 @@ describe('Meteora test', () => {
     }, 30000); // 30 second timeout
 
     it('test meteora getPositions - note - need to use a paid RPC for this test', async () => {
-        const positions = await edwin.plugins.meteora.getPositions.execute({
-            protocol: 'meteora',
-            chain: 'solana',
-        });
+        const positions = await edwin.plugins.meteora.getPositions.execute();
         edwinLogger.info('🚀 ~ it ~ getPositions result:', safeJsonStringify(positions));
     }, 120000); // 120 second timeout
 
     it('test meteora create position and add liquidity, then check for new position', async () => {
-        const results = await edwin.actions.getPools.execute({
+        const results = await edwin.plugins.meteora.getPools.execute({
             asset: 'sol',
             assetB: 'usdc',
-            protocol: 'meteora',
         });
         const topPoolAddress = results[0].address;
 
-        const result = await edwin.actions.addLiquidity.execute({
+        const result = await edwin.plugins.addLiquidity.execute({
             poolAddress: topPoolAddress,
             amount: 'auto',
             amountB: '2',
@@ -61,7 +58,7 @@ describe('Meteora test', () => {
 
         const positionAddress = result.positionAddress;
         // Get positions after adding liquidity
-        const positions = await edwin.actions.getPositionsFromPool.execute({
+        const positions = await edwin.plugins.getPositionsFromPool.execute({
             protocol: 'meteora',
             chain: 'solana',
             poolAddress: topPoolAddress,
@@ -74,7 +71,7 @@ describe('Meteora test', () => {
 
     it('test meteora remove liquidity', async () => {
         // Get initial positions
-        const positions = await edwin.actions.getPositions.execute({
+        const positions = await edwin.plugins.getPositions.execute({
             protocol: 'meteora',
             chain: 'solana',
         });
@@ -110,7 +107,7 @@ describe('Meteora test', () => {
 describe('Meteora utils', () => {
     const edwinConfig: EdwinConfig = {
         solanaPrivateKey: process.env.SOLANA_PRIVATE_KEY,
-        actions: ['getPositions', 'getPools', 'addLiquidity', 'removeLiquidity', 'getPositionsFromPool'],
+        plugins: ['meteora'],
     };
     const edwin = new Edwin(edwinConfig);
 
@@ -183,8 +180,8 @@ describe('Meteora utils', () => {
 
     describe('extractBalanceChanges', () => {
         it('should correctly extract balance changes from a transaction', async () => {
-            const tokenXMint = await edwin.getTokenAddress('sol');
-            const tokenYMint = await edwin.getTokenAddress('usdc');
+            const tokenXMint = await edwin.wallets.solana.getTokenAddress('sol');
+            const tokenYMint = await edwin.wallets.solana.getTokenAddress('usdc');
             if (!tokenXMint || !tokenYMint) {
                 throw new Error('Token address not found');
             }

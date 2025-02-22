@@ -2,16 +2,18 @@ import { EdwinTool } from '../types';
 import { EdwinService } from './edwinToolProvider';
 
 export abstract class EdwinPlugin {
-    protected tools: EdwinTool[];
+    private tools: EdwinTool[];
 
     constructor(
         protected name: string,
-        private toolProviders: EdwinService[]
+        protected toolProviders: EdwinService[]
     ) {
         this.tools = [];
     }
 
-    getTools(): EdwinTool[] {
-        return [];
+    protected getToolsArray(): EdwinTool[] {
+        return this.tools;
     }
+
+    abstract getTools(): Record<string, EdwinTool>;
 }

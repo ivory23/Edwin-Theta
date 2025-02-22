@@ -4,7 +4,7 @@ import { createReactAgent } from '@langchain/langgraph/prebuilt';
 import { ChatOpenAI } from '@langchain/openai';
 import * as dotenv from 'dotenv';
 import * as readline from 'readline';
-import { Edwin, EdwinConfig, PLUGINS } from '../../src/client';
+import { Edwin, EdwinConfig } from '../../src/client';
 import { getEdwinTools } from '../../src/adapters/langchain';
 
 dotenv.config();
@@ -42,7 +42,7 @@ async function initializeAgent() {
             throw new Error('EVM private key is not set');
         }
 
-        const plugins = Object.keys(PLUGINS);
+        const plugins = ['meteora', 'aave'];
 
         console.log('Used plugins:', plugins);
 

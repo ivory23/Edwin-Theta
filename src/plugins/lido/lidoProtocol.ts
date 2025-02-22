@@ -1,11 +1,13 @@
 import type { SupportedChain } from '../../core/types';
 import type { StakeParameters } from './parameters';
 import { EdwinEVMWallet } from '../../core/wallets/evm_wallet/evm_wallet';
+import { EdwinService } from '../../core/classes/edwinToolProvider';
 
-export class LidoProtocol {
+export class LidoProtocol extends EdwinService {
     private wallet: EdwinEVMWallet;
 
     constructor(wallet: EdwinEVMWallet) {
+        super();
         this.wallet = wallet;
     }
 

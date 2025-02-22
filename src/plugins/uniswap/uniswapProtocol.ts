@@ -1,12 +1,14 @@
 import type { SupportedChain } from '../../core/types';
 import { EdwinEVMWallet } from '../../core/wallets/evm_wallet/evm_wallet';
 import { LiquidityParameters } from './parameters';
+import { EdwinService } from '../../core/classes/edwinToolProvider';
 
-export class UniswapProtocol {
+export class UniswapProtocol extends EdwinService {
     supportedChains: SupportedChain[] = ['mainnet'];
     private wallet: EdwinEVMWallet;
 
     constructor(wallet: EdwinEVMWallet) {
+        super();
         this.wallet = wallet;
     }
 
