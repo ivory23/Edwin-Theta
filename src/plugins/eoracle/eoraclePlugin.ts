@@ -10,9 +10,7 @@ export class EOraclePlugin extends EdwinPlugin {
     }
 
     getTools(): Record<string, EdwinTool> {
-        const eoracleClient = this.toolProviders.find(
-            provider => provider instanceof EOracleClient
-        ) as EOracleClient;
+        const eoracleClient = this.toolProviders.find(provider => provider instanceof EOracleClient) as EOracleClient;
 
         return {
             eoracleGetPrice: {

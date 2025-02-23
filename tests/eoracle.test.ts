@@ -5,13 +5,11 @@ import { EOracleClient } from '../src/plugins/eoracle/eoracleService';
 
 dotenv.config();
 
-const createMockResponse = (data: any) => new Response(
-    JSON.stringify(data),
-    {
+const createMockResponse = (data: any) =>
+    new Response(JSON.stringify(data), {
         status: 200,
-        headers: { 'Content-Type': 'application/json' }
-    }
-);
+        headers: { 'Content-Type': 'application/json' },
+    });
 
 describe('EOracleSystem Integration', () => {
     let eoracle: EOracleClient;
@@ -87,22 +85,20 @@ describe('EOracleSystem Integration', () => {
         it('should handle unknown symbol error', async () => {
             vi.mocked(fetch).mockResolvedValueOnce(createMockResponse(mockFeeds));
 
-            await expect(
-                eoracle.getPrice('UNKNOWN/USD')
-            ).rejects.toThrow('No feed found for symbol: UNKNOWN/USD');
+            await expect(eoracle.getPrice('UNKNOWN/USD')).rejects.toThrow('No feed found for symbol: UNKNOWN/USD');
         });
 
         it('should handle API errors', async () => {
-            vi.mocked(fetch).mockResolvedValueOnce(new Response(
-                JSON.stringify({ ok: false, status: 401, statusText: 'Unauthorized' }),
-                { status: 401, statusText: 'Unauthorized' }
-            ));
+            vi.mocked(fetch).mockResolvedValueOnce(
+                new Response(JSON.stringify({ ok: false, status: 401, statusText: 'Unauthorized' }), {
+                    status: 401,
+                    statusText: 'Unauthorized',
+                })
+            );
 
             const loggerSpy = vi.spyOn(edwinLogger, 'error');
 
-            await expect(
-                eoracle.getPrice('BTC/USD')
-            ).rejects.toThrow('EOracleAPI request failed: Unauthorized');
+            await expect(eoracle.getPrice('BTC/USD')).rejects.toThrow('EOracleAPI request failed: Unauthorized');
 
             expect(loggerSpy).toHaveBeenCalledWith(
                 'EOracleAPI Error:',
@@ -116,13 +112,13 @@ describe('EOracleSystem Integration', () => {
         it('should handle invalid API response format', async () => {
             vi.mocked(fetch)
                 .mockResolvedValueOnce(createMockResponse(mockFeeds))
-                .mockResolvedValueOnce(createMockResponse({
-                    success: false,
-                }));
+                .mockResolvedValueOnce(
+                    createMockResponse({
+                        success: false,
+                    })
+                );
 
-            await expect(
-                eoracle.getPrice('BTC/USD')
-            ).rejects.toThrow('Failed to get price for BTC/USD');
+            await expect(eoracle.getPrice('BTC/USD')).rejects.toThrow('Failed to get price for BTC/USD');
         });
 
         it('should handle network errors', async () => {
@@ -130,14 +126,9 @@ describe('EOracleSystem Integration', () => {
 
             const loggerSpy = vi.spyOn(edwinLogger, 'error');
 
-            await expect(
-                eoracle.getPrice('BTC/USD')
-            ).rejects.toThrow();
+            await expect(eoracle.getPrice('BTC/USD')).rejects.toThrow();
 
-            expect(loggerSpy).toHaveBeenCalledWith(
-                'Error fetching price:',
-                expect.any(Error)
-            );
+            expect(loggerSpy).toHaveBeenCalledWith('Error fetching price:', expect.any(Error));
         });
     });
-}); 
+});

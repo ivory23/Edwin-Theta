@@ -48,7 +48,9 @@ export class AaveService extends EdwinService {
             // Check if error contains gas estimation error details
             const aaveError = error as AaveError;
             if (aaveError.code === 'UNPREDICTABLE_GAS_LIMIT') {
-                const reason = aaveError.error?.body ? JSON.parse(aaveError.error.body).error.message : aaveError.reason;
+                const reason = aaveError.error?.body
+                    ? JSON.parse(aaveError.error.body).error.message
+                    : aaveError.reason;
                 throw new Error(`Transaction failed: ${reason}`);
             }
             throw error;

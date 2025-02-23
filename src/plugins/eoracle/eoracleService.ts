@@ -59,14 +59,12 @@ export class EOracleClient extends EdwinService {
         if (cachedId) return cachedId;
 
         const response = await this.fetch<EOracleResponse<FeedInfo[]>>('/feeds');
-        
+
         if (!response.success || !response.data) {
             throw new Error('Failed to fetch feeds');
         }
 
-        const feed = response.data.find(f => 
-            f.description.toUpperCase() === symbol.toUpperCase()
-        );
+        const feed = response.data.find(f => f.description.toUpperCase() === symbol.toUpperCase());
 
         if (!feed) {
             throw new Error(`No feed found for symbol: ${symbol}`);
@@ -80,7 +78,7 @@ export class EOracleClient extends EdwinService {
         try {
             const feedId = await this.getFeedId(symbol);
             const response = await this.fetch<EOracleResponse<PriceResponse>>(`/feeds/${feedId}`);
-            
+
             if (!response.success || !response.data) {
                 throw new Error(`Failed to get price for ${symbol}`);
             }
@@ -95,4 +93,4 @@ export class EOracleClient extends EdwinService {
             throw error;
         }
     }
-} 
+}
