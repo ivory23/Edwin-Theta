@@ -1,16 +1,18 @@
 import { EdwinPlugin } from '../../core/classes/edwinPlugin';
 import { EdwinTool, Chain } from '../../core/types';
 import { z } from 'zod';
-import { EOracleClient } from './eoracleService';
+import { EOracleService } from './eoracleService';
 import { PriceParameters } from './parameters';
 
 export class EOraclePlugin extends EdwinPlugin {
     constructor(apiKey: string) {
-        super('eoracle', [new EOracleClient(apiKey)]);
+        super('eoracle', [new EOracleService(apiKey)]);
     }
 
     getTools(): Record<string, EdwinTool> {
-        const eoracleClient = this.toolProviders.find(provider => provider instanceof EOracleClient) as EOracleClient;
+        const eoracleService = this.toolProviders.find(
+            provider => provider instanceof EOracleService
+        ) as EOracleService;
 
         return {
             eoracleGetPrice: {
@@ -20,7 +22,7 @@ export class EOraclePlugin extends EdwinPlugin {
                     symbol: z.string().min(1),
                 }),
                 execute: async (params: PriceParameters) => {
-                    return await eoracleClient.getPrice(params.symbol);
+                    return await eoracleService.getPrice(params.symbol);
                 },
             },
         };

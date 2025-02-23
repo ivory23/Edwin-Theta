@@ -7,7 +7,7 @@ import edwinLogger from '../src/utils/logger';
 import { calculateAmounts, extractBalanceChanges } from '../src/plugins/meteora/utils';
 import DLMM from '@meteora-ag/dlmm';
 import { BN } from '@coral-xyz/anchor';
-import { EdwinSolanaWallet } from '../src/core/wallets/solana_wallet/solana_wallet';
+import { EdwinSolanaWallet } from '../src/core/wallets';
 import { MeteoraProtocol } from '../src/plugins/meteora/meteoraProtocol';
 
 // Meteora test

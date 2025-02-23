@@ -1,6 +1,6 @@
 import { SupportedChain } from '../../core/types';
 import { PublicKey, VersionedTransaction } from '@solana/web3.js';
-import { EdwinSolanaWallet } from '../../core/wallets/solana_wallet/solana_wallet';
+import { EdwinSolanaWallet } from '../../core/wallets';
 import { withRetry } from '../../utils';
 import { SwapParameters } from './parameters';
 

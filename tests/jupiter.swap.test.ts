@@ -3,7 +3,7 @@ config();
 
 import { describe, expect, it } from 'vitest';
 import { JupiterService } from '../src/plugins/jupiter/jupiterService';
-import { EdwinSolanaWallet } from '../src/core/wallets/solana_wallet/solana_wallet';
+import { EdwinSolanaWallet } from '../src/core/wallets';
 
 describe('Jupiter Swap Test', () => {
     if (!process.env.SOLANA_PRIVATE_KEY) {

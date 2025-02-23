@@ -19,7 +19,7 @@ interface EOracleResponse<T> {
     error: string | null;
 }
 
-export class EOracleClient extends EdwinService {
+export class EOracleService extends EdwinService {
     private apiKey: string;
     private baseUrl: string;
     private feedCache = new Map<string, string>();

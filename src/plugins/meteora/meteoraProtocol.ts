@@ -1,4 +1,4 @@
-import { EdwinSolanaWallet } from '../../core/wallets/solana_wallet/solana_wallet';
+import { EdwinSolanaWallet } from '../../core/wallets';
 import DLMM, { StrategyType, BinLiquidity, PositionData, LbPosition, PositionInfo } from '@meteora-ag/dlmm';
 import { Keypair, PublicKey } from '@solana/web3.js';
 import { BN } from '@coral-xyz/anchor';

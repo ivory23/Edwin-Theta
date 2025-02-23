@@ -8,7 +8,7 @@ import { LuloPlugin } from '../plugins/lulo/luloPlugin';
 import { MeteoraPlugin } from '../plugins/meteora/meteoraPlugin';
 import { JupiterPlugin } from '../plugins/jupiter/jupiterPlugin';
 import { CookiePlugin } from '../plugins/cookie/cookiePlugin';
-import { EOraclePlugin } from '../plugins/eoracle/eoraclePlugin';
+import { eoracle, EOraclePlugin } from '../plugins/eoracle/eoraclePlugin';
 
 export interface EdwinConfig {
     evmPrivateKey?: `0x${string}`;
@@ -60,6 +60,10 @@ export class Edwin {
 
         if (process.env.COOKIE_API_KEY) {
             this.plugins.cookie = cookie(process.env.COOKIE_API_KEY);
+        }
+
+        if (process.env.EORACLE_API_KEY) {
+            this.plugins.eoracle = eoracle(process.env.EORACLE_API_KEY);
         }
     }
 

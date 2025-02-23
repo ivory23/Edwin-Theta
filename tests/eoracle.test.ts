@@ -1,7 +1,7 @@
 import { describe, expect, it, beforeEach, vi } from 'vitest';
 import edwinLogger from '../src/utils/logger';
 import dotenv from 'dotenv';
-import { EOracleClient } from '../src/plugins/eoracle/eoracleService';
+import { EOracleService } from '../src';
 
 dotenv.config();
 
@@ -12,7 +12,7 @@ const createMockResponse = (data: any) =>
     });
 
 describe('EOracleSystem Integration', () => {
-    let eoracle: EOracleClient;
+    let eoracle: EOracleService;
 
     const mockFeeds = {
         success: true,
@@ -35,7 +35,7 @@ describe('EOracleSystem Integration', () => {
         process.env.EORACLE_API_URL = 'https://api.eoracle.test';
         process.env.EORACLE_API_KEY = 'test-api-key';
 
-        eoracle = new EOracleClient('test-api-key');
+        eoracle = new EOracleService('test-api-key');
 
         vi.spyOn(global, 'fetch').mockImplementation(vi.fn());
     });

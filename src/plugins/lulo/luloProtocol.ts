@@ -2,7 +2,7 @@ import { VersionedTransaction } from '@solana/web3.js';
 import { SupportedChain } from '../../core/types';
 import { SupplyParameters, WithdrawParameters } from './parameters';
 
-import { EdwinSolanaWallet } from '../../core/wallets/solana_wallet/solana_wallet';
+import { EdwinSolanaWallet } from '../../core/wallets';
 import edwinLogger from '../../utils/logger';
 
 interface LuloDepositResponse {

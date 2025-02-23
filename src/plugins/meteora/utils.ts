@@ -9,7 +9,7 @@ import {
 import { BN } from '@coral-xyz/anchor';
 import DLMM from '@meteora-ag/dlmm';
 import edwinLogger from '../../utils/logger';
-import { EdwinSolanaWallet } from '../../core/wallets/solana_wallet/solana_wallet';
+import { EdwinSolanaWallet } from '../../core/wallets';
 
 interface TokenAmount {
     amount: string;
