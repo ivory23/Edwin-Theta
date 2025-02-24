@@ -276,8 +276,8 @@ export class EdwinSolanaWallet extends EdwinWallet {
     async verifyBalanceByPublicKey(mintAddress: string, amount: number): Promise<void> {
         const balance = await this.getBalanceByPublicKey(mintAddress);
         if (balance < amount) {
-            const symbol = (await this.getTokenAddress(mintAddress)) || mintAddress;
-            throw new InsufficientBalanceError(amount, balance, symbol);
+            const tokenAddress = (await this.getTokenAddress(mintAddress)) || mintAddress;
+            throw new InsufficientBalanceError(amount, balance, tokenAddress);
         }
     }
 }

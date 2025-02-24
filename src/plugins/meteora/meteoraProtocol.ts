@@ -249,7 +249,7 @@ export class MeteoraProtocol {
             (Number(amountB) > 0 && verifiedTokenAmounts[1].uiAmount == 0)
         ) {
             edwinLogger.info('Encountered a statistical bug where not all of the liquidity was added to the pool');
-            throw new MeteoraStatisticalBugError('Meteora statistical bug');
+            throw new MeteoraStatisticalBugError('Meteora statistical bug', positionPubKey.toString());
         }
         return {
             positionAddress: positionPubKey.toString(),
@@ -275,7 +275,7 @@ export class MeteoraProtocol {
             }
 
             let attempts = 0;
-            const MAX_ATTEMPTS = 3;
+            const MAX_ATTEMPTS = 5;
             let result: { positionAddress: string; liquidityAdded: [number, number] } | undefined;
             while (attempts < MAX_ATTEMPTS) {
                 try {
@@ -288,13 +288,13 @@ export class MeteoraProtocol {
                             `Attempt ${attempts}: Encountered Meteora statistical bug, closing position and retrying...`
                         );
 
-                        if (attempts < MAX_ATTEMPTS && result?.positionAddress) {
+                        if (attempts < MAX_ATTEMPTS) {
                             await withRetry(
                                 async () =>
                                     this.removeLiquidity({
                                         poolAddress,
+                                        positionAddress: error.positionAddress,
                                         shouldClosePosition: true,
-                                        positionAddress: result!.positionAddress,
                                     }),
                                 'Meteora remove liquidity'
                             );
