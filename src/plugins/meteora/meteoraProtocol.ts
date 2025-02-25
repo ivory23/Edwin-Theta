@@ -198,7 +198,7 @@ export class MeteoraProtocol {
                 strategy: {
                     maxBinId,
                     minBinId,
-                    strategyType: StrategyType.BidAskImBalanced,
+                    strategyType: StrategyType.SpotImBalanced,
                 },
             });
         } else {
@@ -218,7 +218,7 @@ export class MeteoraProtocol {
                 strategy: {
                     maxBinId,
                     minBinId,
-                    strategyType: StrategyType.BidAskImBalanced,
+                    strategyType: StrategyType.SpotImBalanced,
                 },
             });
             signers.push(newBalancePosition as Keypair);
