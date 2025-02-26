@@ -21,23 +21,17 @@ pnpm install edwin-sdk
 ## Quick Start
 
 ```typescript
-import { Edwin, EdwinConfig } from 'edwin-sdk';
+// Import the required wallet and services
+import { EdwinEVMWallet, AaveService } from 'edwin-sdk';
 
-// Configure Edwin wallets and providers
-const edwinConfig: EdwinConfig = {
-    evmPrivateKey: process.env.PRIVATE_KEY,
-    solanaPrivateKey: process.env.SOLANA_PRIVATE_KEY,
-    actions: ['supply', 'withdraw', 'stake'],
-};
-
-// Initialize Edwin SDK
-const edwin = new Edwin(edwinConfig);
+// Configure Edwin wallets and services
+const wallet = new EdwinEVMWallet(evmPrivateKey as `0x${string}`);
+const aave = new AaveService(wallet);
 
 // Supply tokens to a lending protocol
-await edwin.actions.supply.execute({
-    protocol: 'aave',
+const result = await aave.supply({
     chain: 'base',
-    amount: '100',
+    amount: 0.05,
     asset: 'usdc',
 });
 ```
