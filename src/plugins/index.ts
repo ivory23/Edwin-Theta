@@ -6,3 +6,4 @@ export * from './uniswap';
 export * from './jupiter';
 export * from './cookie';
 export * from './eoracle';
+export * from './storyprotocol';
