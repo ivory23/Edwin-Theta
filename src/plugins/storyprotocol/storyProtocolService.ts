@@ -1,5 +1,5 @@
 import { StoryClient, WIP_TOKEN_ADDRESS } from '@story-protocol/core-sdk';
-import { createWalletClient, http, Address, toHex } from 'viem';
+import { createWalletClient, http, toHex } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { sepolia } from 'viem/chains';
 import { EdwinEVMWallet } from '../../core/wallets';
@@ -42,7 +42,8 @@ export class StoryProtocolService {
     }
     
     const account = privateKeyToAccount(privateKey as `0x${string}`);
-    const viemWalletClient = createWalletClient({
+    // Create wallet client (not used in this implementation but would be in a real implementation)
+    const _viemWalletClient = createWalletClient({
       account,
       chain: sepolia,
       transport: http(process.env.RPC_PROVIDER_URL || 'https://sepolia.infura.io/v3/'),
@@ -63,7 +64,7 @@ export class StoryProtocolService {
   }
 
   async registerIPAsset(params: RegisterIPAssetParameters): Promise<string> {
-    const { name, description, mediaUrl, contentHash, externalUrl } = params;
+    const { name: _name, description: _description, mediaUrl: _mediaUrl, contentHash: _contentHash, externalUrl: _externalUrl } = params;
     
     // Upload metadata to IPFS
     const ipMetadata = {
@@ -86,7 +87,7 @@ export class StoryProtocolService {
   }
 
   async attachTerms(params: AttachTermsParameters): Promise<string> {
-    const { ipId, termsUrl, termsHash } = params;
+    const { ipId: _ipId, termsUrl, termsHash } = params;
     
     // Attach terms to IP asset
     // Note: This is a simplified implementation
@@ -110,7 +111,7 @@ export class StoryProtocolService {
   }
 
   async mintLicenseToken(params: MintLicenseTokenParameters): Promise<string> {
-    const { ipId, licenseTermsUrl, licenseTermsHash, mintTo } = params;
+    const { ipId: _ipId, licenseTermsUrl: _licenseTermsUrl, licenseTermsHash: _licenseTermsHash, mintTo: _mintTo } = params;
     
     // Mint license token
     // Note: This is a placeholder. The actual implementation depends on the SDK version
@@ -118,7 +119,7 @@ export class StoryProtocolService {
   }
 
   async registerDerivative(params: RegisterDerivativeParameters): Promise<string> {
-    const { parentIpId, name, description, mediaUrl, contentHash, externalUrl, isCommercial } = params;
+    const { parentIpId, name: _name, description: _description, mediaUrl: _mediaUrl, contentHash: _contentHash, externalUrl: _externalUrl, isCommercial: _isCommercial } = params;
     
     // Register derivative IP
     const { ipId } = await this.client.ipAsset.registerDerivativeIp({
