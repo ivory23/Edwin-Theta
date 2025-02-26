@@ -95,6 +95,7 @@ export class StoryProtocolService {
       nftContract: this.nftContractAddress as `0x${string}`,
       tokenId: BigInt(1),
       licenseTermsData: [{
+        // Using 'any' type for mock implementation since we don't have access to the actual SDK types
         terms: {} as any,
         licensingConfig: {} as any,
       }],
