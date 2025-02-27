@@ -25,4 +25,23 @@ describe('Edwin AAVE test', () => {
         });
         expect(result).toBeDefined();
     });
+
+    it('Test withdraw action', async () => {
+        const evmPrivateKey = process.env.EVM_PRIVATE_KEY;
+        if (!evmPrivateKey) {
+            throw new Error('EVM_PRIVATE_KEY is not set');
+        }
+
+        const wallet = new EdwinEVMWallet(evmPrivateKey as `0x${string}`);
+        const aave = new AaveService(wallet);
+
+        expect(aave).toBeDefined();
+
+        const result = await aave.withdraw({
+            chain: 'base',
+            amount: 0.05,
+            asset: 'usdc',
+        });
+        expect(result).toBeDefined();
+    });
 });
