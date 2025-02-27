@@ -138,18 +138,27 @@ export class EdwinEVMWallet extends EdwinWallet {
             throw new Error('Invalid chain name');
         }
 
-        const viemChain: Chain = customRpcUrl
-            ? {
-                  ...baseChain,
-                  rpcUrls: {
-                      ...baseChain.rpcUrls,
-                      custom: {
-                          http: [customRpcUrl],
-                      },
-                  },
-              }
-            : baseChain;
+        if (!customRpcUrl) {
+            return baseChain;
+        }
 
-        return viemChain;
+        // Create custom RPC configuration
+        const customRpc: { http: string[]; webSocket?: string[] } = {
+            http: [customRpcUrl],
+        };
+
+        // Only add webSocket if it exists in the original chain
+        if ('webSocket' in baseChain.rpcUrls.default) {
+            customRpc.webSocket = [...baseChain.rpcUrls.default.webSocket];
+        }
+
+        // Create a new chain object with the custom RPC URL
+        return {
+            ...baseChain,
+            rpcUrls: {
+                ...baseChain.rpcUrls,
+                custom: customRpc,
+            },
+        };
     }
 }
