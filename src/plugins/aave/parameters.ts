@@ -7,6 +7,7 @@ export interface SupplyParameters {
 }
 
 export interface WithdrawParameters {
+    chain: SupportedChain;
     asset: string;
     amount: number;
 }
