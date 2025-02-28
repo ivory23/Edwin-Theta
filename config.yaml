@@ -1,0 +1,54 @@
+agent:
+  name: Edwin Portfolio Manager
+  version: 1.0.0
+  rebalance_threshold: 0.05
+  max_slippage: 0.01
+  update_interval: 300
+
+risk:
+  max_exposure: 0.3
+  min_liquidity: 0.1
+  max_drawdown: 0.2
+  risk_tolerance: medium
+
+protocols:
+  uniswap:
+    enabled: true
+    version: v3
+    max_pool_share: 0.1
+    rpc_url: ${UNISWAP_RPC_URL}
+    api_key: ${UNISWAP_API_KEY}
+
+  aave:
+    enabled: true
+    version: v2
+    max_utilization: 0.8
+    rpc_url: ${AAVE_RPC_URL}
+    api_key: ${AAVE_API_KEY}
+
+assets:
+  ETH:
+    enabled: true
+    max_allocation: 0.4
+    min_allocation: 0.1
+    price_feed: ethereum
+  USDC:
+    enabled: true
+    max_allocation: 0.5
+    min_allocation: 0.2
+    price_feed: usd-coin
+  WBTC:
+    enabled: true
+    max_allocation: 0.3
+    min_allocation: 0.1
+    price_feed: wrapped-bitcoin
+
+analytics:
+  report_interval: 86400
+  metrics:
+    - volatility
+    - sharpe_ratio
+    - drawdown
+  storage:
+    type: local
+    path: data/analytics
