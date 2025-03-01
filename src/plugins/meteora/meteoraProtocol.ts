@@ -12,6 +12,7 @@ import {
 import { withRetry } from '../../utils';
 import { MeteoraStatisticalBugError } from './errors';
 import { AddLiquidityParameters, RemoveLiquidityParameters, PoolParameters, GetPoolsParameters } from './parameters';
+import { InsufficientBalanceError } from '../../errors';
 interface MeteoraPoolResult {
     pairs: MeteoraPool[];
 }
@@ -158,8 +159,14 @@ export class MeteoraProtocol {
             'Meteora create pool'
         );
 
-        await this.wallet.verifyBalanceByPublicKey(dlmmPool.tokenX.publicKey.toString(), Number(amount));
-        await this.wallet.verifyBalanceByPublicKey(dlmmPool.tokenY.publicKey.toString(), Number(amountB));
+        const balance = await this.wallet.getBalance(dlmmPool.tokenX.publicKey.toString());
+        if (balance < Number(amount)) {
+            throw new InsufficientBalanceError(Number(amount), balance, dlmmPool.tokenX.publicKey.toString());
+        }
+        const balanceB = await this.wallet.getBalance(dlmmPool.tokenY.publicKey.toString());
+        if (balanceB < Number(amountB)) {
+            throw new InsufficientBalanceError(Number(amountB), balanceB, dlmmPool.tokenY.publicKey.toString());
+        }
 
         // Wrap the position check in retry logic
         const positionInfo = await withRetry(
@@ -170,7 +177,12 @@ export class MeteoraProtocol {
 
         const activeBin = await withRetry(async () => dlmmPool.getActiveBin(), 'Meteora get active bin');
         const activeBinPricePerToken = dlmmPool.fromPricePerLamport(Number(activeBin.price));
-        const [totalXAmount, totalYAmount] = await calculateAmounts(amount, amountB, activeBinPricePerToken, dlmmPool);
+        const [totalXAmount, totalYAmount]: [BN, BN] = await calculateAmounts(
+            amount,
+            amountB,
+            activeBinPricePerToken,
+            dlmmPool
+        );
         if (totalXAmount.isZero() && totalYAmount.isZero()) {
             throw new TypeError('Total liquidity trying to add is 0');
         }
