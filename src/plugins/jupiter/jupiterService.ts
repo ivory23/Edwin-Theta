@@ -1,8 +1,8 @@
 import { SupportedChain } from '../../core/types';
 import { PublicKey, VersionedTransaction } from '@solana/web3.js';
 import { EdwinSolanaWallet } from '../../core/wallets';
-import { withRetry } from '../../utils';
 import { SwapParameters } from './parameters';
+import { InsufficientBalanceError } from '../../errors';
 
 interface SwapInfo {
     ammKey: string;
@@ -103,15 +103,18 @@ export class JupiterService {
         if (!asset || !assetB || !amount) {
             throw new Error('Invalid swap params. Need: asset, assetB, amount');
         }
-        await this.wallet.verifyBalance(asset, Number(amount));
-
-        // 1. Get quote from Jupiter
         const inputMint = await this.wallet.getTokenAddress(asset);
         const outputMint = await this.wallet.getTokenAddress(assetB);
         if (!inputMint || !outputMint) {
             throw new Error(`Invalid asset: ${asset} or ${assetB}`);
         }
 
+        const balance = await this.wallet.getBalance(inputMint);
+        if (balance < Number(amount)) {
+            throw new InsufficientBalanceError(Number(amount), balance, asset);
+        }
+
+        // 1. Get quote from Jupiter
         // Get token decimals and adjust amount
         const connection = this.wallet.getConnection();
         const mintInfo = await connection.getParsedAccountInfo(new PublicKey(inputMint));
@@ -148,15 +151,6 @@ export class JupiterService {
         // 8. Retrieve the actual output amount based on the output asset type:
         //    - For SOL, check lamport balance changes (and add back the fee).
         //    - For SPL tokens, check the token account balance changes.
-        // Fetch the parsed transaction details (make sure to set the proper options)
-        const txInfo = await withRetry(
-            () => connection.getParsedTransaction(signature, { maxSupportedTransactionVersion: 0 }),
-            'Get parsed transaction',
-            20
-        );
-        if (!txInfo || !txInfo.meta) {
-            throw new Error('Could not fetch transaction details');
-        }
         return await this.wallet.getTransactionTokenBalanceChange(signature, assetB);
     }
 

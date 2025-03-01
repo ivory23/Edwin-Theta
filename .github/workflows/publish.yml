@@ -33,6 +33,10 @@ jobs:
         uses: phips28/gh-action-bump-version@master
         with:
           tag-prefix: 'v'
+          default-bump-level: 'patch'
+          minor-wording: 'minor'
+          major-wording: 'BREAKING,major'
+          patch-wording: 'fix,patch,docs,chore,refactor,test,style,feature,feat'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

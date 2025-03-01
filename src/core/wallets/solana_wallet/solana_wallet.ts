@@ -7,12 +7,13 @@ import {
     Transaction,
     VersionedTransaction,
     SystemProgram,
+    Commitment,
+    Finality,
 } from '@solana/web3.js';
 import { TokenListProvider } from '@solana/spl-token-registry';
 import { EdwinWallet } from '../wallet';
 import { JitoJsonRpcClient } from './jito_client';
 import edwinLogger from '../../../utils/logger';
-import { InsufficientBalanceError } from '../../../errors';
 import { withRetry } from '../../../utils';
 
 const NATIVE_SOL_MINT = 'So11111111111111111111111111111111111111112';
@@ -56,10 +57,10 @@ export class EdwinSolanaWallet extends EdwinWallet {
         return this.wallet_address;
     }
 
-    getConnection(customRpcUrl?: string): Connection {
+    getConnection(customRpcUrl?: string, commitment: Commitment = 'confirmed'): Connection {
         return new Connection(
             customRpcUrl || process.env.SOLANA_RPC_URL! || 'https://api.mainnet-beta.solana.com',
-            'confirmed'
+            commitment
         );
     }
 
@@ -83,11 +84,11 @@ export class EdwinSolanaWallet extends EdwinWallet {
         return token ? token.address : null;
     }
 
-    async getBalanceByPublicKey(mintAddress: string): Promise<number> {
+    async getBalance(mintAddress?: string, commitment: Commitment = 'confirmed'): Promise<number> {
         const connection = this.getConnection();
 
-        if (mintAddress === NATIVE_SOL_MINT) {
-            return (await connection.getBalance(this.wallet_address)) / LAMPORTS_PER_SOL;
+        if (!mintAddress || mintAddress === NATIVE_SOL_MINT) {
+            return (await connection.getBalance(this.wallet_address, commitment)) / LAMPORTS_PER_SOL;
         }
 
         const tokenMint = new PublicKey(mintAddress);
@@ -100,21 +101,8 @@ export class EdwinSolanaWallet extends EdwinWallet {
         }
 
         const tokenAccount = tokenAccounts.value[0];
-        const tokenAccountBalance = await connection.getTokenAccountBalance(tokenAccount.pubkey);
+        const tokenAccountBalance = await connection.getTokenAccountBalance(tokenAccount.pubkey, commitment);
         return tokenAccountBalance.value.uiAmount || 0;
-    }
-
-    async getBalance(symbol: string = 'SOL'): Promise<number> {
-        if (!symbol || symbol.toLowerCase() === 'sol') {
-            return this.getBalanceByPublicKey(NATIVE_SOL_MINT);
-        }
-
-        const tokenAddress = await this.getTokenAddress(symbol);
-        if (!tokenAddress) {
-            throw new Error(`Token ${symbol} not found`);
-        }
-
-        return this.getBalanceByPublicKey(tokenAddress);
     }
 
     // Function to gracefully wait for transaction confirmation
@@ -215,7 +203,7 @@ export class EdwinSolanaWallet extends EdwinWallet {
         return data.result; // Transaction signature returned by Jito
     }
 
-    async getTransactionTokenBalanceChange(signature: string, asset: string) {
+    async getTransactionTokenBalanceChange(signature: string, asset: string, commitment: Finality = 'confirmed') {
         //    - For SOL, check lamport balance changes (and add back the fee).
         //    - For SPL tokens, check the token account balance changes.
         let actualOutputAmount: number;
@@ -226,7 +214,11 @@ export class EdwinSolanaWallet extends EdwinWallet {
         const connection = this.getConnection();
         // Fetch the parsed transaction details (make sure to set the proper options)
         const txInfo = await withRetry(
-            () => connection.getParsedTransaction(signature, { maxSupportedTransactionVersion: 0 }),
+            () =>
+                connection.getParsedTransaction(signature, {
+                    maxSupportedTransactionVersion: 0,
+                    commitment: commitment,
+                }),
             'Get parsed transaction'
         );
         if (!txInfo || !txInfo.meta) {
@@ -264,20 +256,5 @@ export class EdwinSolanaWallet extends EdwinWallet {
             actualOutputAmount = (postBalance || 0) - (preBalance || 0);
         }
         return actualOutputAmount;
-    }
-
-    async verifyBalance(symbol: string, amount: number): Promise<void> {
-        const balance = await this.getBalance(symbol);
-        if (balance < amount) {
-            throw new InsufficientBalanceError(amount, balance, symbol);
-        }
-    }
-
-    async verifyBalanceByPublicKey(mintAddress: string, amount: number): Promise<void> {
-        const balance = await this.getBalanceByPublicKey(mintAddress);
-        if (balance < amount) {
-            const tokenAddress = (await this.getTokenAddress(mintAddress)) || mintAddress;
-            throw new InsufficientBalanceError(amount, balance, tokenAddress);
-        }
     }
 }

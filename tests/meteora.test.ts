@@ -72,7 +72,7 @@ describe('Meteora test', () => {
         }
 
         // Remove liquidity from first position found
-        const poolAddress = positions.keys().toArray()[0];
+        const poolAddress = Array.from(positions.keys())[0];
         const result = await meteora.removeLiquidity({
             poolAddress: poolAddress,
             shouldClosePosition: true,
