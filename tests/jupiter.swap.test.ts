@@ -15,7 +15,11 @@ describe('Jupiter Swap Test', () => {
     it('should swap USDC to SOL and back', async () => {
         // Initial balances
         const initialSolBalance = await wallet.getBalance();
-        const initialUsdcBalance = await wallet.getBalance('usdc');
+        const usdcMint = await wallet.getTokenAddress('usdc');
+        if (!usdcMint) {
+            throw new Error('USDC mint not found');
+        }
+        const initialUsdcBalance = await wallet.getBalance(usdcMint);
         console.log('Initial balances:');
         console.log('SOL:', initialSolBalance);
         console.log('USDC:', initialUsdcBalance);
@@ -30,7 +34,7 @@ describe('Jupiter Swap Test', () => {
 
         // Check balances after first swap
         const midSolBalance = await wallet.getBalance();
-        const midUsdcBalance = await wallet.getBalance('usdc');
+        const midUsdcBalance = await wallet.getBalance(usdcMint);
         console.log('\nBalances after first swap:');
         console.log('SOL:', midSolBalance);
         console.log('USDC:', midUsdcBalance);
@@ -48,7 +52,7 @@ describe('Jupiter Swap Test', () => {
 
         // Final balances
         const finalSolBalance = await wallet.getBalance();
-        const finalUsdcBalance = await wallet.getBalance('usdc');
+        const finalUsdcBalance = await wallet.getBalance(usdcMint);
         console.log('\nFinal balances:');
         console.log('SOL:', finalSolBalance);
         console.log('USDC:', finalUsdcBalance);
